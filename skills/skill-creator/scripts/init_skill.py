@@ -22,6 +22,8 @@ description: [TODO: Complete and informative explanation of what the skill does 
 # allowed-tools: [optional, e.g. ["Bash", "Read", "Write"]]
 # model: [optional, model override]
 # effort: [optional: low/medium/high/max (Opus 4.6 only)]
+# paths: [optional: glob patterns limiting activation, e.g. "*.py, src/**"]
+# shell: [optional: bash (default) or powershell]
 # context: [optional: fork - runs in a forked subagent context]
 # agent: [optional: subagent type when context: fork, e.g. Explore, Plan, general-purpose]
 # disable-model-invocation: [optional: true to prevent Claude from auto-loading this skill]
