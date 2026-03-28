@@ -229,6 +229,8 @@ Based on interview, fill in the required fields and relevant optional fields:
 | `allowed-tools` | Tools that skip permission prompt |
 | `model` | Model override for this skill |
 | `effort` | `low`/`medium`/`high`/`max` (Opus 4.6 only) |
+| `paths` | Glob patterns limiting when skill activates (string or YAML list) |
+| `shell` | Shell for dynamic context commands: `bash` (default) or `powershell` |
 | `context` | `fork` — run in a forked subagent context |
 | `agent` | Subagent type when `context: fork` (Explore, Plan, general-purpose) |
 | `disable-model-invocation` | `true` to prevent Claude from auto-loading |
@@ -378,15 +380,7 @@ Skills can use variables that are replaced at load time:
 
 ### Dynamic Context Injection
 
-The `` !`command` `` syntax runs shell commands before content is sent to Claude:
-
-```yaml
----
-name: pr-review
----
-Current diff: !`gh pr diff`
-Review the changes above.
-```
+Skills can embed shell command output directly into their content at load time. Commands execute before content reaches Claude — Claude only sees the substituted output. Useful for injecting git diffs, file listings, API responses, etc. See `references/frontmatter-reference.md` section 4 for syntax and examples.
 
 ### Skills as Subagents
 
