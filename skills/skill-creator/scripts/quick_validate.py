@@ -43,6 +43,7 @@ def validate_skill(skill_path):
         'name', 'description', 'license', 'allowed-tools', 'metadata',
         'argument-hint', 'effort', 'context', 'agent', 'hooks',
         'model', 'disable-model-invocation', 'user-invocable',
+        'paths', 'shell',
     }
 
     # Check for unexpected properties (excluding nested keys under metadata)
@@ -120,6 +121,23 @@ def validate_skill(skill_path):
             return False, f"agent must be a string, got {type(agent).__name__}"
         if context_val != 'fork':
             print("WARNING: 'agent' is set but 'context' is not 'fork'. The agent field typically requires context: fork.")
+
+    # Validate paths if present
+    paths = frontmatter.get('paths')
+    if paths is not None:
+        if not isinstance(paths, (str, list)):
+            return False, f"paths must be a string or list, got {type(paths).__name__}"
+        if isinstance(paths, list):
+            for item in paths:
+                if not isinstance(item, str):
+                    return False, f"paths list items must be strings, got {type(item).__name__}"
+
+    # Validate shell if present
+    shell = frontmatter.get('shell')
+    if shell is not None:
+        valid_shells = {'bash', 'powershell'}
+        if shell not in valid_shells:
+            return False, f"shell must be one of {', '.join(sorted(valid_shells))}, got '{shell}'"
 
     # Validate hooks if present
     hooks = frontmatter.get('hooks')

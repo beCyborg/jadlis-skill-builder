@@ -51,6 +51,8 @@ model: string             # model override
 effort: enum              # low | medium | high | max (Opus 4.6 only)
 context: enum             # fork (runs in subagent context)
 agent: string             # subagent type when context: fork (Explore, Plan, general-purpose)
+paths: string | list      # glob patterns limiting activation (e.g., "*.py, src/**")
+shell: enum               # bash (default) | powershell
 
 # Optional - Lifecycle
 hooks: object             # hooks scoped to skill lifecycle (PreToolUse, PostToolUse, etc.)
