@@ -14,6 +14,8 @@ Complete reference for all frontmatter fields available in Claude Code SKILL.md 
 | `allowed-tools` | list of strings | No | Tools Claude can use without asking permission while this skill is active. Example: `["Bash", "Read", "Glob"]`. |
 | `model` | string | No | Model override for this skill. Forces a specific model when the skill is invoked. |
 | `effort` | enum | No | Effort level override. Values: `low`, `medium`, `high`, `max`. Opus 4.6 only. |
+| `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. |
+| `shell` | enum | No | Shell for dynamic context injection commands. Values: `bash` (default), `powershell`. Requires `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` for PowerShell. |
 | `context` | enum | No | Execution context. Set to `fork` to run the skill in a forked subagent context instead of the main conversation. |
 | `agent` | string | No | Which subagent type to use when `context: fork`. Options: `Explore`, `Plan`, `general-purpose`, or a custom agent name. |
 | `hooks` | object | No | Hooks scoped to this skill's lifecycle. Only active while the skill runs. See section 6. |
