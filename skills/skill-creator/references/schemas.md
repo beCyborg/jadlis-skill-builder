@@ -46,7 +46,7 @@ disable-model-invocation: boolean  # default false; true = user-only
 user-invocable: boolean   # default true; false = Claude-only
 
 # Optional - Execution
-allowed-tools: list       # tools without permission prompt (e.g., ["Bash", "Read"])
+allowed-tools: string|list # tools without permission prompt (e.g., "Bash Read" or ["Bash", "Read"]). Supports patterns: "Bash(gh *)"
 model: string             # model override
 effort: enum              # low | medium | high | max (Opus 4.6 only)
 context: enum             # fork (runs in subagent context)

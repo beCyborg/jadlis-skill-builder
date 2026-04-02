@@ -219,7 +219,7 @@ This creates:
 Based on interview, fill in the required fields and relevant optional fields:
 
 - **name**: Skill identifier (kebab-case, max 64 chars)
-- **description**: When to trigger, what it does (max 1024 chars). This is the primary triggering mechanism — include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: Claude tends to "undertrigger" skills. To combat this, make descriptions a little "pushy" — e.g., instead of "Build dashboards for internal data.", write "Build dashboards for internal data. Use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
+- **description**: When to trigger, what it does (max 1024 chars, but **front-load key use cases in the first 250 characters** — descriptions are truncated at this length in the skill listing). This is the primary triggering mechanism — include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: Claude tends to "undertrigger" skills. To combat this, make descriptions a little "pushy" — e.g., instead of "Build dashboards for internal data.", write "Build dashboards for internal data. Use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
 
 **Optional fields** (see `references/frontmatter-reference.md` for full details):
 
@@ -382,6 +382,10 @@ Skills can use variables that are replaced at load time:
 
 Skills can embed shell command output directly into their content at load time. Commands execute before content reaches Claude — Claude only sees the substituted output. Useful for injecting git diffs, file listings, API responses, etc. See `references/frontmatter-reference.md` section 4 for syntax and examples.
 
+### Extended Thinking (ultrathink)
+
+Include the word "ultrathink" anywhere in skill content to enable extended thinking mode. See `references/frontmatter-reference.md` for details.
+
 ### Skills as Subagents
 
 Set `context: fork` and `agent` to run the skill in an independent subagent:
@@ -409,7 +413,7 @@ skills:
 
 ### Context Budget
 
-Skill descriptions consume ~2% of the context window. Keep SKILL.md under 500 lines; use `references/` for detailed content. Check with `/context`. Override with `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var.
+Skill descriptions consume ~1% of the context window (fallback: 8,000 characters). Each description is truncated at 250 characters in the skill listing, so front-load key use cases. Keep SKILL.md under 500 lines; use `references/` for detailed content. Check with `/context`. Override with `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var.
 
 ### Validation
 

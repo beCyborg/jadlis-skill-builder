@@ -19,7 +19,7 @@ SKILL_TEMPLATE = """---
 name: {skill_name}
 description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
 # argument-hint: [optional, e.g. "[file-path]"]
-# allowed-tools: [optional, e.g. ["Bash", "Read", "Write"]]
+# allowed-tools: [optional, e.g. "Bash Read Write" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)"]
 # model: [optional, model override]
 # effort: [optional: low/medium/high/max (Opus 4.6 only)]
 # paths: [optional: glob patterns limiting activation, e.g. "*.py, src/**"]
