@@ -43,7 +43,7 @@ def validate_skill(skill_path):
         'name', 'description', 'license', 'allowed-tools', 'metadata',
         'argument-hint', 'effort', 'context', 'agent', 'hooks',
         'model', 'disable-model-invocation', 'user-invocable',
-        'paths', 'shell',
+        'paths', 'shell', 'compatibility',
     }
 
     # Check for unexpected properties (excluding nested keys under metadata)
@@ -87,6 +87,9 @@ def validate_skill(skill_path):
         # Check description length (max 1024 characters per spec)
         if len(description) > 1024:
             return False, f"Description is too long ({len(description)} characters). Maximum is 1024 characters."
+        # Warn if description exceeds the 250-char display truncation limit
+        if len(description) > 250:
+            print(f"WARNING: Description is {len(description)} characters. It will be truncated at 250 characters in the skill listing. Front-load key trigger words.")
 
     # Deprecation warning for compatibility field
     compatibility = frontmatter.get('compatibility')

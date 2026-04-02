@@ -2,6 +2,8 @@
 
 Complete reference for all frontmatter fields available in Claude Code SKILL.md files.
 
+Claude Code skills follow the [Agent Skills](https://agentskills.io) open standard, which works across multiple AI tools. Claude Code extends the standard with additional features like invocation control, subagent execution, and dynamic context injection.
+
 ---
 
 ## 1. Complete Frontmatter Fields
@@ -9,9 +11,9 @@ Complete reference for all frontmatter fields available in Claude Code SKILL.md 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `name` | string | No (defaults to directory name) | Skill identifier. Must be kebab-case, max 64 characters. |
-| `description` | string | Recommended | What the skill does and when to use it. Max 1024 chars, no angle brackets (`<>`). This is the primary triggering mechanism -- Claude reads descriptions to decide when to invoke a skill. |
+| `description` | string | Recommended | What the skill does and when to use it. Max 1024 chars, no angle brackets (`<>`). **Front-load key use cases in the first 250 chars** — descriptions are truncated at this length in the skill listing. If omitted, uses the first paragraph of markdown content. This is the primary triggering mechanism -- Claude reads descriptions to decide when to invoke a skill. |
 | `argument-hint` | string | No | Hint shown during autocomplete in the `/` menu, e.g. `[issue-number]`, `[file-path]`. |
-| `allowed-tools` | list of strings | No | Tools Claude can use without asking permission while this skill is active. Example: `["Bash", "Read", "Glob"]`. |
+| `allowed-tools` | string or list | No | Tools Claude can use without asking permission while this skill is active. Accepts a space-separated string (`Read Grep Glob`) or YAML list (`["Bash", "Read"]`). Supports patterns: `Bash(gh *)`. |
 | `model` | string | No | Model override for this skill. Forces a specific model when the skill is invoked. |
 | `effort` | enum | No | Effort level override. Values: `low`, `medium`, `high`, `max`. Opus 4.6 only. |
 | `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. |
@@ -21,8 +23,8 @@ Complete reference for all frontmatter fields available in Claude Code SKILL.md 
 | `hooks` | object | No | Hooks scoped to this skill's lifecycle. Only active while the skill runs. See section 6. |
 | `disable-model-invocation` | boolean | No (default: `false`) | When `true`, prevents Claude from auto-loading this skill. It will not appear in Claude's context and can only be invoked manually by the user via `/skill-name`. |
 | `user-invocable` | boolean | No (default: `true`) | When `false`, hides the skill from the `/` menu. Only Claude can invoke it programmatically. |
-| `license` | string | No | License identifier for the skill (e.g. `MIT`, `Apache-2.0`). |
-| `metadata` | object | No | Custom metadata. Arbitrary key-value pairs for your own use. |
+| `license` | string | No | License identifier (e.g. `MIT`, `Apache-2.0`). From Agent Skills standard; not in Claude Code docs. |
+| `metadata` | object | No | Custom key-value pairs for your own use. From Agent Skills standard; not in Claude Code docs. |
 
 ---
 
@@ -100,6 +102,10 @@ When invoked, Claude receives the skill content with real diff output already em
 - Commands run in the project's working directory.
 - If a command fails, the error output is included in place of the placeholder.
 - Use this for injecting dynamic context like git status, file listings, API responses, etc.
+
+### Extended Thinking (ultrathink)
+
+Include the word **"ultrathink"** anywhere in your skill content to enable extended thinking mode. This gives Claude a larger thinking budget for complex reasoning tasks. Use for skills that require deep analysis, multi-step planning, or complex code review.
 
 ---
 
@@ -193,7 +199,7 @@ hooks:
 
 ## 7. Context Budget
 
-Skill descriptions consume approximately **~2% of the context window**. Full skill content only loads when the skill is actually invoked.
+Skill descriptions consume approximately **~1% of the context window** (fallback: 8,000 characters). Each description is **truncated at 250 characters** in the skill listing, so front-load key trigger words. Full skill content only loads when the skill is actually invoked.
 
 ### Best practices
 
@@ -216,6 +222,23 @@ Skill descriptions consume approximately **~2% of the context window**. Full ski
 **Priority order:** Enterprise > Personal > Project.
 
 Plugin skills use the `plugin-name:skill-name` namespace to avoid naming conflicts. For example, a skill `deploy` in plugin `my-tools` is invoked as `/my-tools:deploy`.
+
+Skills in nested `.claude/skills/` directories are automatically discovered (useful for monorepo setups).
+
+### Permission rules
+
+Control which skills Claude can invoke using permission rules:
+
+```text
+# Allow only specific skills
+Skill(commit)
+Skill(review-pr *)
+
+# Deny specific skills
+Skill(deploy *)
+```
+
+Syntax: `Skill(name)` for exact match, `Skill(name *)` for prefix match with any arguments.
 
 ---
 
