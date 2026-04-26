@@ -105,7 +105,7 @@ Here are some tips that we've found to work well in writing these descriptions:
 - The skill should be phrased in the imperative -- "Use this skill for" rather than "this skill does"
 - The skill description should focus on the user's intent, what they are trying to achieve, vs. the implementation details of how the skill works.
 - The description competes with other skills for Claude's attention — make it distinctive and immediately recognizable.
-- IMPORTANT: Descriptions are truncated at 250 characters in the skill listing. Front-load the most important trigger words and use cases in the first 250 characters.
+- The combined description + when_to_use text is truncated at 1,536 characters in the skill listing.
 - If you're getting lots of failures after repeated attempts, change things up. Try different sentence structures or wordings.
 
 I'd encourage you to be creative and mix up the style in different iterations since you'll have multiple opportunities to try different approaches and we'll just grab the highest-scoring one at the end. 
@@ -143,12 +143,12 @@ Please respond with only the new description text in <new_description> tags, not
         "response": text,
         "parsed_description": description,
         "char_count": len(description),
-        "over_limit": len(description) > 1024,
+        "over_limit": len(description) > 1536,
     }
 
-    # If over 1024 chars, ask the model to shorten it
-    if len(description) > 1024:
-        shorten_prompt = f"Your description is {len(description)} characters, which exceeds the hard 1024 character limit. Please rewrite it to be under 1024 characters while preserving the most important trigger words and intent coverage. Respond with only the new description in <new_description> tags."
+    # If over 1536 chars, ask the model to shorten it
+    if len(description) > 1536:
+        shorten_prompt = f"Your description is {len(description)} characters, which exceeds the 1,536 character limit (combined description + when_to_use). Please rewrite it to be under 1,536 characters while preserving the most important trigger words and intent coverage. Respond with only the new description in <new_description> tags."
         shorten_response = client.messages.create(
             model=model,
             max_tokens=16000,
@@ -210,7 +210,7 @@ def main():
     if args.history:
         history = json.loads(Path(args.history).read_text())
 
-    name, _, content = parse_skill_md(skill_path)
+    name, _, _, content = parse_skill_md(skill_path)
     current_description = eval_results["description"]
 
     if args.verbose:
