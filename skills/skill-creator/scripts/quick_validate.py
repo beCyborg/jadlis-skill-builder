@@ -40,8 +40,8 @@ def validate_skill(skill_path):
 
     # Define allowed properties
     ALLOWED_PROPERTIES = {
-        'name', 'description', 'license', 'allowed-tools', 'metadata',
-        'argument-hint', 'effort', 'context', 'agent', 'hooks',
+        'name', 'description', 'when_to_use', 'license', 'allowed-tools', 'metadata',
+        'argument-hint', 'arguments', 'effort', 'context', 'agent', 'hooks',
         'model', 'disable-model-invocation', 'user-invocable',
         'paths', 'shell', 'compatibility',
     }
@@ -84,12 +84,18 @@ def validate_skill(skill_path):
         # Check for angle brackets
         if '<' in description or '>' in description:
             return False, "Description cannot contain angle brackets (< or >)"
-        # Check description length (max 1024 characters per spec)
-        if len(description) > 1024:
-            return False, f"Description is too long ({len(description)} characters). Maximum is 1024 characters."
-        # Warn if description exceeds the 250-char display truncation limit
-        if len(description) > 250:
-            print(f"WARNING: Description is {len(description)} characters. It will be truncated at 250 characters in the skill listing. Front-load key trigger words.")
+
+    # Validate combined description + when_to_use length (max 1536 characters per spec)
+    when_to_use = frontmatter.get('when_to_use', '')
+    if not isinstance(when_to_use, str):
+        when_to_use = str(when_to_use) if when_to_use is not None else ''
+    when_to_use = when_to_use.strip()
+    if description and when_to_use:
+        combined = description + " " + when_to_use
+    else:
+        combined = description + when_to_use
+    if len(combined) > 1536:
+        return False, f"Combined description + when_to_use is too long ({len(combined)} characters). Maximum is 1,536 characters."
 
     # Deprecation warning for compatibility field
     compatibility = frontmatter.get('compatibility')
@@ -104,10 +110,20 @@ def validate_skill(skill_path):
         if len(argument_hint) > 128:
             return False, f"argument-hint is too long ({len(argument_hint)} characters). Maximum is 128 characters."
 
+    # Validate arguments if present
+    arguments = frontmatter.get('arguments')
+    if arguments is not None:
+        if isinstance(arguments, list):
+            for item in arguments:
+                if not isinstance(item, str):
+                    return False, f"arguments list items must be strings, got {type(item).__name__}"
+        elif not isinstance(arguments, str):
+            return False, f"arguments must be a string or list, got {type(arguments).__name__}"
+
     # Validate effort if present
     effort = frontmatter.get('effort')
     if effort is not None:
-        valid_efforts = {'low', 'medium', 'high', 'max'}
+        valid_efforts = {'low', 'medium', 'high', 'xhigh', 'max'}
         if effort not in valid_efforts:
             return False, f"effort must be one of {', '.join(sorted(valid_efforts))}, got '{effort}'"
 

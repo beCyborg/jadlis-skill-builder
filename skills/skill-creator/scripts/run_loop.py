@@ -63,7 +63,7 @@ def run_loop(
 ) -> dict:
     """Run the eval + improvement loop."""
     project_root = find_project_root()
-    name, original_description, content = parse_skill_md(skill_path)
+    name, original_description, _, content = parse_skill_md(skill_path)
     current_description = description_override or original_description
 
     # Split into train/test if holdout > 0
@@ -269,7 +269,7 @@ def main():
         print(f"Error: No SKILL.md found at {skill_path}", file=sys.stderr)
         sys.exit(1)
 
-    name, _, _ = parse_skill_md(skill_path)
+    name, _, _, _ = parse_skill_md(skill_path)
 
     # Set up live report path
     if args.report != "none":

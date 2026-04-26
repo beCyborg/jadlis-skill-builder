@@ -38,17 +38,19 @@ Defines the frontmatter structure for skill files.
 ---
 # Required
 name: string              # kebab-case, max 64 chars (e.g., "my-skill")
-description: string       # max 1024 chars, no angle brackets
+description: string       # no angle brackets; combined with when_to_use, truncated at 1,536 chars
+when_to_use: string      # additional trigger context; appended to description
 
 # Optional - Invocation Control
 argument-hint: string     # autocomplete hint (e.g., "[file-path]")
+arguments: string|list   # named positional arguments for $name substitution
 disable-model-invocation: boolean  # default false; true = user-only
 user-invocable: boolean   # default true; false = Claude-only
 
 # Optional - Execution
 allowed-tools: string|list # tools without permission prompt (e.g., "Bash Read" or ["Bash", "Read"]). Supports patterns: "Bash(gh *)"
 model: string             # model override
-effort: enum              # low | medium | high | max (Opus 4.6 only)
+effort: enum              # low | medium | high | xhigh | max (available levels depend on the model)
 context: enum             # fork (runs in subagent context)
 agent: string             # subagent type when context: fork (Explore, Plan, general-purpose)
 paths: string | list      # glob patterns limiting activation (e.g., "*.py, src/**")
@@ -78,6 +80,7 @@ Variables available in SKILL.md content, replaced at load time:
 | `$N` | Shorthand for `$ARGUMENTS[N]` |
 | `${CLAUDE_SESSION_ID}` | Current session ID |
 | `${CLAUDE_SKILL_DIR}` | Directory containing the skill's SKILL.md file |
+| `$name` | Named argument from `arguments` frontmatter list |
 
 If `$ARGUMENTS` is not present in the skill body, arguments are appended as `ARGUMENTS: <value>`.
 

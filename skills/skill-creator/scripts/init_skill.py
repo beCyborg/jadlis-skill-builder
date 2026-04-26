@@ -18,10 +18,12 @@ from pathlib import Path
 SKILL_TEMPLATE = """---
 name: {skill_name}
 description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+# when_to_use: [optional: Additional context for when to invoke this skill — trigger phrases, example requests. Combined with description, truncated at 1,536 chars.]
 # argument-hint: [optional, e.g. "[file-path]"]
+# arguments: [optional: named positional arguments for $name substitution, e.g. "issue branch" or ["issue", "branch"]]
 # allowed-tools: [optional, e.g. "Bash Read Write" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)"]
 # model: [optional, model override]
-# effort: [optional: low/medium/high/max (Opus 4.6 only)]
+# effort: [optional: low/medium/high/xhigh/max (available levels depend on the model)]
 # paths: [optional: glob patterns limiting activation, e.g. "*.py, src/**"]
 # shell: [optional: bash (default) or powershell]
 # context: [optional: fork - runs in a forked subagent context]

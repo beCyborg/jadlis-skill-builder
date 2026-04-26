@@ -11,12 +11,14 @@ Claude Code skills follow the [Agent Skills](https://agentskills.io) open standa
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `name` | string | No (defaults to directory name) | Skill identifier. Must be kebab-case, max 64 characters. |
-| `description` | string | Recommended | What the skill does and when to use it. Max 1024 chars, no angle brackets (`<>`). **Front-load key use cases in the first 250 chars** — descriptions are truncated at this length in the skill listing. If omitted, uses the first paragraph of markdown content. This is the primary triggering mechanism -- Claude reads descriptions to decide when to invoke a skill. |
+| `description` | string | Recommended | What the skill does and when to use it. No angle brackets (`<>`). Front-load the key use case: the combined `description` and `when_to_use` text is truncated at **1,536 characters** in the skill listing. If omitted, uses the first paragraph of markdown content. This is the primary triggering mechanism. |
+| `when_to_use` | string | No | Additional context for when Claude should invoke the skill — trigger phrases, example requests. Appended to `description` in the skill listing and counts toward the 1,536-character cap. |
 | `argument-hint` | string | No | Hint shown during autocomplete in the `/` menu, e.g. `[issue-number]`, `[file-path]`. |
+| `arguments` | string or list | No | Named positional arguments for `$name` substitution in the skill content. Accepts a space-separated string or a YAML list. Names map to argument positions in order. |
 | `allowed-tools` | string or list | No | Tools Claude can use without asking permission while this skill is active. Accepts a space-separated string (`Read Grep Glob`) or YAML list (`["Bash", "Read"]`). Supports patterns: `Bash(gh *)`. |
 | `model` | string | No | Model override for this skill. Forces a specific model when the skill is invoked. |
-| `effort` | enum | No | Effort level override. Values: `low`, `medium`, `high`, `max`. Opus 4.6 only. |
-| `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. |
+| `effort` | enum | No | Effort level override. Values: `low`, `medium`, `high`, `xhigh`, `max`. Available levels depend on the model. |
+| `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. Uses the same format as path-specific rules. Skills in nested `.claude/skills/` directories are automatically discovered (useful for monorepo setups). |
 | `shell` | enum | No | Shell for dynamic context injection commands. Values: `bash` (default), `powershell`. Requires `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` for PowerShell. |
 | `context` | enum | No | Execution context. Set to `fork` to run the skill in a forked subagent context instead of the main conversation. |
 | `agent` | string | No | Which subagent type to use when `context: fork`. Options: `Explore`, `Plan`, `general-purpose`, or a custom agent name. |
@@ -53,6 +55,7 @@ Available variables inside SKILL.md content (below the frontmatter):
 | `$ARGUMENTS` | All arguments passed when invoking the skill, as a single string. |
 | `$ARGUMENTS[N]` | Specific argument by 0-based index. |
 | `$N` | Shorthand for `$ARGUMENTS[N]`. E.g. `$0` is the first argument, `$1` is the second. |
+| `$name` | Named argument declared in the `arguments` frontmatter list. Names map to positions in order, so with `arguments: [issue, branch]` the placeholder `$issue` expands to the first argument and `$branch` to the second. |
 | `${CLAUDE_SESSION_ID}` | Current Claude Code session ID. |
 | `${CLAUDE_SKILL_DIR}` | Absolute path to the directory containing this skill's SKILL.md file. |
 
@@ -102,6 +105,23 @@ When invoked, Claude receives the skill content with real diff output already em
 - Commands run in the project's working directory.
 - If a command fails, the error output is included in place of the placeholder.
 - Use this for injecting dynamic context like git status, file listings, API responses, etc.
+
+### Multi-line Dynamic Context
+
+For multi-line commands, use a fenced code block opened with ` ```! ` instead of the inline form:
+
+````markdown
+## Environment
+```!
+node --version
+npm --version
+git status --short
+```
+````
+
+### disableSkillShellExecution
+
+To disable shell execution in skills from user, project, plugin, or additional-directory sources, set `"disableSkillShellExecution": true` in settings. Each command is replaced with `[shell command execution disabled by policy]`. Bundled and managed skills are not affected. Most useful in managed settings where users cannot override it.
 
 ### Extended Thinking (ultrathink)
 
@@ -195,11 +215,18 @@ hooks:
           prompt: "Confirm this is the first Bash command of the session"
 ```
 
+### Best practices for hooks in skills
+
+- Use `once: true` for one-time checks (e.g., environment verification at skill start)
+- Keep hook commands fast — they block the tool call
+- Use `prompt` type hooks for soft guidance, `command` type for hard enforcement
+- Test hooks in isolation before adding them to skill frontmatter
+
 ---
 
 ## 7. Context Budget
 
-Skill descriptions consume approximately **~1% of the context window** (fallback: 8,000 characters). Each description is **truncated at 250 characters** in the skill listing, so front-load key trigger words. Full skill content only loads when the skill is actually invoked.
+Skill descriptions consume approximately **~1% of the context window** (fallback: 8,000 characters). The combined `description` + `when_to_use` text is **truncated at 1,536 characters** in the skill listing, so front-load key trigger words. Full skill content only loads when the skill is actually invoked.
 
 ### Best practices
 
