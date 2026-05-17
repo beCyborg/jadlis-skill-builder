@@ -80,6 +80,7 @@ Variables available in SKILL.md content, replaced at load time:
 | `$N` | Shorthand for `$ARGUMENTS[N]` |
 | `${CLAUDE_SESSION_ID}` | Current session ID |
 | `${CLAUDE_SKILL_DIR}` | Directory containing the skill's SKILL.md file |
+| `${CLAUDE_EFFORT}` | Current effort level (low/medium/high/xhigh/max) (v2.1.120+) |
 | `$name` | Named argument from `arguments` frontmatter list |
 
 If `$ARGUMENTS` is not present in the skill body, arguments are appended as `ARGUMENTS: <value>`.

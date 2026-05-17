@@ -12,6 +12,13 @@ Fields like `name`, `description`, `when_to_use`, `arguments`, `allowed-tools`, 
 ### Agent `.md` frontmatter (`.claude/agents/`)
 Fields like `name`, `description`, `model`, `memory`, `isolation`, `mcpServers`, `color`, `background`, `maxTurns`, `disallowedTools`, `skills`.
 
+The `memory` field enables persistent memory for agents. Scopes:
+- `user` — stored in `~/.claude/agent-memory/<agent-name>/`, available across all projects
+- `project` (recommended default) — stored in `.claude/agent-memory/<agent-name>/`, shareable via git
+- `local` — stored in `.claude/agent-memory-local/<agent-name>/`, gitignored
+
+Configure via `/agents` UI or set in frontmatter: `memory: project`.
+
 **Do not mix these.** Agent-specific fields (`memory`, `isolation`, `mcpServers`, etc.) belong in agent `.md` files, not in SKILL.md.
 
 ## Skill with `context: fork`
@@ -64,3 +71,7 @@ skills:
 ```
 
 The full content of each listed skill is injected at agent startup.
+
+## Managing agents
+
+Use `/agents` to interactively create, edit, configure tools/models, set persistent memory, and manage custom agents.
