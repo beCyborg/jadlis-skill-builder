@@ -103,6 +103,8 @@ It's OK to briefly explain terms if you're in doubt, and feel free to clarify te
 
 Start by understanding the user's intent. The current conversation might already contain a workflow the user wants to capture (e.g., they say "turn this into a skill"). If so, extract answers from the conversation history first — the tools used, the sequence of steps, corrections the user made, input/output formats observed. The user may need to fill the gaps, and should confirm before proceeding to the next step.
 
+Create a skill when you keep pasting the same instructions, checklist, or multi-step procedure into chat, or when a section of CLAUDE.md has grown into a procedure rather than a fact.
+
 1. What should this skill enable Claude to do?
 2. When should this skill trigger? (what user phrases/contexts)
 3. What's the expected output format?
@@ -154,6 +156,18 @@ Based on interview, fill in the required fields and relevant optional fields:
 | `hooks` | Hooks scoped to this skill's lifecycle |
 
 **Invocation control**: By default, both user and Claude can invoke a skill. Set `disable-model-invocation: true` for user-only skills (e.g., dangerous operations). Set `user-invocable: false` for Claude-only background knowledge skills that shouldn't appear in the `/` menu.
+
+Skills are discovered from `.claude/skills/` in the starting directory and every parent directory up to the repo root. Directories added via `--add-dir` also have their `.claude/skills/` loaded automatically. Useful for monorepo setups.
+
+### skillOverrides (settings-based visibility)
+
+Control skill visibility from `settings.json` without editing SKILL.md. The `/skills` menu writes it for you (highlight a skill, press Space to cycle states). Values: `"on"`, `"name-only"`, `"user-invocable-only"`, `"off"`.
+
+**Caveat (v2.1.129+):** As of May 2026, skillOverrides only takes effect from managed/policy settings. User and project settings overrides do not yet propagate. Track issue #50631.
+
+Plugin skills are not affected; manage those through `/plugin`.
+
+Control which skills Claude can invoke using permission rules: `Skill(name)` for exact match, `Skill(name *)` for prefix match.
 
 ### Skill Writing Guide
 
@@ -238,6 +252,8 @@ Claude Code watches skill directories — file edits are detected without restar
 
 Try to explain to the model why things are important in lieu of heavy-handed musty MUSTs. Use theory of mind and try to make the skill general and not super-narrow to specific examples. Start by writing a draft and then look at it with fresh eyes and improve it.
 
+For the final skill body: state what to do rather than narrating how or why. Every line in a loaded skill is a recurring token cost across turns — optimize for signal density in the artifact, while using explanatory context during the iterative development process.
+
 ### Test Cases
 
 After writing the skill draft, come up with 2-3 realistic test prompts — the kind of thing a real user would actually say. Share them with the user: [you don't have to use this exact language] "Here are a few test cases I'd like to try. Do these look right, or do you want to add more?" Then run them.
@@ -253,7 +269,7 @@ If the user wants evals, create `evals/evals.json` with this structure:
       "prompt": "User's task prompt",
       "expected_output": "Description of expected result",
       "files": [],
-      "assertions": [
+      "expectations": [
         "The output includes X",
         "The skill correctly handles Y"
       ]
@@ -272,15 +288,15 @@ Once gradable criteria are defined (expectations, success metrics), Claude can:
 - Run tests automatically (via subagents in the background if available, otherwise sequentially)
 - Present results: "I tried X, it improved pass rate by Y%"
 
-### Package and Present (only if `present_files` tool is available)
+### Package and Present
 
-Check whether you have access to the `present_files` tool. If you don't, skip this step. If you do, package the skill and present the .skill file to the user:
+After creating or improving a skill, package it:
 
 ```bash
 scripts/package_skill.py <path/to/skill-folder>
 ```
 
-After packaging, direct the user to the resulting `.skill` file path so they can install it.
+Direct the user to the resulting `.skill` file path so they can install it.
 
 ---
 
@@ -296,16 +312,21 @@ Skills can use variables that are replaced at load time:
 - `$name` — named argument from the `arguments` frontmatter list
 - `${CLAUDE_SKILL_DIR}` — directory containing the skill's SKILL.md
 - `${CLAUDE_SESSION_ID}` — current session ID
+- `${CLAUDE_EFFORT}` — current effort level (low/medium/high/xhigh/max). Use to adapt skill instructions by effort. (v2.1.120+)
 
 ### Dynamic Context Injection
 
 Skills can embed shell command output directly into their content at load time. Commands execute before content reaches Claude — Claude only sees the substituted output. Useful for injecting git diffs, file listings, API responses, etc. See `references/frontmatter-reference.md` section 4 for syntax and examples.
+
+**Note:** If `disableSkillShellExecution: true` is set in settings, `` !`command` `` placeholders in user/project/plugin/additional-directory skills are replaced with `[shell command execution disabled by policy]`. Bundled and managed skills are exempt. Warn users if their skill relies on dynamic context.
 
 ### Extended Thinking (ultrathink)
 
 Include the word "ultrathink" anywhere in skill content to enable extended thinking mode. See `references/frontmatter-reference.md` for details.
 
 ### Skills as Subagents
+
+Use the `/agents` command to interactively create, configure, and manage custom agents.
 
 Set `context: fork` and `agent` to run the skill in an independent subagent:
 
@@ -336,7 +357,13 @@ When invoked, skill content stays in the conversation for the session. On compac
 
 ### Context Budget
 
-Skill descriptions consume ~1% of the context window (fallback: 8,000 characters). The combined `description` + `when_to_use` text is truncated at 1,536 characters in the skill listing — front-load key use cases. Keep SKILL.md under 500 lines; use `references/` for detailed content. Check with `/context`. Override with `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var.
+Skill descriptions consume ~1% of the context window (fallback: 8,000 characters). The combined `description` + `when_to_use` text is truncated at 1,536 characters in the skill listing — front-load key use cases. Keep SKILL.md under 500 lines; use `references/` for detailed content. Check with `/context`.
+
+Override the budget:
+- `skillListingBudgetFraction` in settings.json (v2.1.105+). **Note:** currently calculates against ~200K baseline, not the actual context window. On 1M models, raise proportionally (e.g., 0.05). Track issue #57941.
+- `maxSkillDescriptionChars` — per-skill character cap (v2.1.105+)
+- `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var — fixed character count
+- Run `/doctor` to check if your skill budget is overflowing and which skills are affected.
 
 ### Validation
 

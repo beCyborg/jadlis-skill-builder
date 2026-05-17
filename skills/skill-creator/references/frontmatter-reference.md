@@ -1,5 +1,7 @@
 # SKILL.md Frontmatter Reference
 
+> Last audited against Claude Code docs: 2026-05-17 (v2.1.143)
+
 Complete reference for all frontmatter fields available in Claude Code SKILL.md files.
 
 Claude Code skills follow the [Agent Skills](https://agentskills.io) open standard, which works across multiple AI tools. Claude Code extends the standard with additional features like invocation control, subagent execution, and dynamic context injection.
@@ -18,7 +20,7 @@ Claude Code skills follow the [Agent Skills](https://agentskills.io) open standa
 | `allowed-tools` | string or list | No | Tools Claude can use without asking permission while this skill is active. Accepts a space-separated string (`Read Grep Glob`) or YAML list (`["Bash", "Read"]`). Supports patterns: `Bash(gh *)`. |
 | `model` | string | No | Model override for this skill. Forces a specific model when the skill is invoked. |
 | `effort` | enum | No | Effort level override. Values: `low`, `medium`, `high`, `xhigh`, `max`. Available levels depend on the model. |
-| `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. Uses the same format as path-specific rules. Skills in nested `.claude/skills/` directories are automatically discovered (useful for monorepo setups). |
+| `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. Uses the same format as path-specific rules. Skills in nested `.claude/skills/` directories and `--add-dir` directories are automatically discovered. |
 | `shell` | enum | No | Shell for dynamic context injection commands. Values: `bash` (default), `powershell`. Requires `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` for PowerShell. |
 | `context` | enum | No | Execution context. Set to `fork` to run the skill in a forked subagent context instead of the main conversation. |
 | `agent` | string | No | Which subagent type to use when `context: fork`. Options: `Explore`, `Plan`, `general-purpose`, or a custom agent name. |
@@ -58,6 +60,7 @@ Available variables inside SKILL.md content (below the frontmatter):
 | `$name` | Named argument declared in the `arguments` frontmatter list. Names map to positions in order, so with `arguments: [issue, branch]` the placeholder `$issue` expands to the first argument and `$branch` to the second. |
 | `${CLAUDE_SESSION_ID}` | Current Claude Code session ID. |
 | `${CLAUDE_SKILL_DIR}` | Absolute path to the directory containing this skill's SKILL.md file. |
+| `${CLAUDE_EFFORT}` | Current effort level: `low`, `medium`, `high`, `xhigh`, or `max`. Adapt skill instructions by effort. (v2.1.120+) |
 
 If `$ARGUMENTS` is **not** referenced anywhere in the skill content, arguments are automatically appended as `ARGUMENTS: <value>` at the end.
 
@@ -233,7 +236,12 @@ Skill descriptions consume approximately **~1% of the context window** (fallback
 - Skills with `disable-model-invocation: true` have **zero context cost** until manually invoked by the user.
 - Keep SKILL.md under **500 lines**. Move reference material, examples, and large prompts to supporting files and reference them with `Read` or dynamic context injection.
 - If too many skills exceed the character budget, some may be excluded from context. Run `/context` to check which skills are loaded.
-- Override the budget with the `SLASH_COMMAND_TOOL_CHAR_BUDGET` environment variable.
+### Override the budget
+
+- `skillListingBudgetFraction` in settings.json (v2.1.105+, default ~0.01). **Note:** calculates against ~200K baseline, not the model's actual context window.
+- `maxSkillDescriptionChars` — per-skill character cap (v2.1.105+).
+- `SLASH_COMMAND_TOOL_CHAR_BUDGET` — env var, fixed character count.
+- Run `/doctor` to diagnose overflow and see which skills are affected.
 
 ---
 
@@ -250,7 +258,7 @@ Skill descriptions consume approximately **~1% of the context window** (fallback
 
 Plugin skills use the `plugin-name:skill-name` namespace to avoid naming conflicts. For example, a skill `deploy` in plugin `my-tools` is invoked as `/my-tools:deploy`.
 
-Skills in nested `.claude/skills/` directories are automatically discovered (useful for monorepo setups).
+Skills load from `.claude/skills/` in the starting directory AND every parent directory up to the repo root. Nested `.claude/skills/` directories discovered on demand. `--add-dir` directories have their `.claude/skills/` loaded automatically.
 
 ### Permission rules
 
@@ -266,6 +274,23 @@ Skill(deploy *)
 ```
 
 Syntax: `Skill(name)` for exact match, `Skill(name *)` for prefix match with any arguments.
+
+### skillOverrides (settings-based visibility)
+
+Control skill visibility from `settings.json` without editing SKILL.md. The `/skills` menu writes it for you (highlight a skill, press Space to cycle states). Values: `"on"`, `"name-only"`, `"user-invocable-only"`, `"off"`.
+
+```json
+{
+  "skillOverrides": {
+    "my-skill": "off",
+    "another-skill": "name-only"
+  }
+}
+```
+
+**Caveat (v2.1.129+):** As of May 2026, skillOverrides only takes effect from managed/policy settings. User and project settings overrides do not yet propagate. Track issue #50631.
+
+Plugin skills are not affected; manage those through `/plugin`.
 
 ---
 

@@ -222,11 +222,11 @@ Copy best skill back to main location:
 cp -r workspace/<best_version>/skill/* ./
 ```
 
-Check whether you have access to the `present_files` tool. If you do, package and present the improved skill, and direct the user to the resulting `.skill` file path so they can install it:
+Package and present the improved skill:
 ```bash
 scripts/package_skill.py <path/to/skill-folder>
 ```
-(If you don't have the `present_files` tool, don't run `package_skill.py`)
+Direct the user to the resulting `.skill` file path.
 
 ### Without Subagents
 
