@@ -40,8 +40,8 @@ def validate_skill(skill_path):
 
     # Define allowed properties
     ALLOWED_PROPERTIES = {
-        'name', 'description', 'when_to_use', 'license', 'allowed-tools', 'metadata',
-        'argument-hint', 'arguments', 'effort', 'context', 'agent', 'hooks',
+        'name', 'description', 'when_to_use', 'license', 'allowed-tools', 'disallowed-tools',
+        'metadata', 'argument-hint', 'arguments', 'effort', 'context', 'agent', 'hooks',
         'model', 'disable-model-invocation', 'user-invocable',
         'paths', 'shell', 'compatibility',
     }
@@ -107,8 +107,9 @@ def validate_skill(skill_path):
     if argument_hint is not None:
         if not isinstance(argument_hint, str):
             return False, f"argument-hint must be a string, got {type(argument_hint).__name__}"
+        # The spec defines no hard length limit; a very long hint just won't render well.
         if len(argument_hint) > 128:
-            return False, f"argument-hint is too long ({len(argument_hint)} characters). Maximum is 128 characters."
+            print(f"WARNING: argument-hint is {len(argument_hint)} characters; long hints may be clipped in the autocomplete box. Consider shortening it.")
 
     # Validate arguments if present
     arguments = frontmatter.get('arguments')
@@ -119,6 +120,16 @@ def validate_skill(skill_path):
                     return False, f"arguments list items must be strings, got {type(item).__name__}"
         elif not isinstance(arguments, str):
             return False, f"arguments must be a string or list, got {type(arguments).__name__}"
+
+    # Validate disallowed-tools if present (string or list, like allowed-tools)
+    disallowed_tools = frontmatter.get('disallowed-tools')
+    if disallowed_tools is not None:
+        if isinstance(disallowed_tools, list):
+            for item in disallowed_tools:
+                if not isinstance(item, str):
+                    return False, f"disallowed-tools list items must be strings, got {type(item).__name__}"
+        elif not isinstance(disallowed_tools, str):
+            return False, f"disallowed-tools must be a string or list, got {type(disallowed_tools).__name__}"
 
     # Validate effort if present
     effort = frontmatter.get('effort')

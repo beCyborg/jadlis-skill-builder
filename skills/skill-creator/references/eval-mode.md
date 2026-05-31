@@ -23,11 +23,11 @@ Evals serve to:
    → Create task, copies skill, stages files
 
 3. Execute (agents/executor.md)
-   → Update task to implementing, spawn executor sub-agent
+   → Set task in_progress (activeForm: "Running executor"), spawn executor sub-agent
    → Executor reads skill, runs prompt, saves transcript
 
 4. Grade (agents/grader.md)
-   → Update task to reviewing, spawn grader sub-agent
+   → Update activeForm to "Grading", spawn grader sub-agent
    → Grader reads transcript + outputs, evaluates expectations
 
 5. Complete task, display results
@@ -58,7 +58,7 @@ This ensures you know the expected structure for:
 
 Before running evals, scan the skill for dependencies:
 
-1. Read SKILL.md (including `compatibility` frontmatter field)
+1. Read SKILL.md and scan its body for dependency hints (tools, MCPs, external services it relies on)
 2. Check referenced scripts for required tools
 3. Present to user and confirm availability
 
@@ -71,15 +71,17 @@ scripts/prepare_eval.py <skill-path> <eval-id> --output-dir <workspace>/eval-<id
 ```
 
 ```python
-task = TaskCreate(
-    subject=f"Eval {eval_id}"
+task_id = TaskCreate(
+    subject=f"Eval {eval_id}",
+    description=f"Prepare, execute, and grade eval {eval_id}",
+    activeForm=f"Preparing eval {eval_id}",
 )
-TaskUpdate(task, status="planning")
+TaskUpdate(taskId=task_id, status="in_progress")
 ```
 
 ## Step 3: Execute
 
-Update task to `implementing` and run the executor:
+Update `activeForm` to "Running executor" (status stays `in_progress`) and run the executor:
 
 ```bash
 echo "{\"executor_start\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > <run-dir>/timing.json
@@ -104,7 +106,7 @@ After execution completes, update timing.json with executor_end and duration.
 
 ## Step 4: Grade
 
-Update task to `reviewing` and run the grader:
+Update `activeForm` to "Grading" (status stays `in_progress`) and run the grader:
 
 **With subagents**: Spawn a grader subagent with these instructions:
 
@@ -124,7 +126,8 @@ After grading completes, finalize timing.json.
 
 ## Step 5: Display Results
 
-Update task to `completed`. Display:
+Update the task to `completed` (`TaskUpdate(taskId=task_id, status="completed")`). Display:
+
 - Pass/fail status for each expectation with evidence
 - Overall pass rate
 - Execution metrics from grading.json

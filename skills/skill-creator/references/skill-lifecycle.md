@@ -27,9 +27,10 @@ Editing a skill file on disk does not update the already-loaded content in the c
 
 ## Live change detection
 
-Claude Code watches skill directories — file creation and modification are detected without restarting. However:
-- Already-loaded skill content in the current conversation is not updated — re-invoke needed
-- Creating a new **top-level** skills directory (e.g., a new `.claude/skills/` path) requires a restart
+Claude Code watches the already-active skill directories — `~/.claude/skills/`, the project `.claude/skills/`, and `.claude/skills/` inside an `--add-dir` directory. Edits, additions, and removals within those are picked up live. However:
+- Already-loaded skill content in the current conversation is not updated — re-invoke needed (see Re-invocation above)
+- Creating a **top-level** skills directory that did not exist when the session started is the one case the watcher can't pick up — run `/reload-skills` to re-scan without restarting, or restart if needed
+- `/reload-skills` (v2.1.152+) re-scans all skill directories on demand; a `SessionStart` hook can return `reloadSkills: true` to surface skills it just installed in the same session
 
 ## Best practices for long skills
 

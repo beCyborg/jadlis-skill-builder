@@ -7,10 +7,10 @@ When a skill creates or works with companion subagents.
 Skills and subagents have separate `.md` files with **different** frontmatter fields:
 
 ### SKILL.md frontmatter
-Fields like `name`, `description`, `when_to_use`, `arguments`, `allowed-tools`, `model`, `effort`, `context`, `agent`, `hooks`, `paths`, `shell`, `disable-model-invocation`, `user-invocable`.
+Fields like `name`, `description`, `when_to_use`, `arguments`, `allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`, `agent`, `hooks`, `paths`, `shell`, `disable-model-invocation`, `user-invocable`. (Skill uses the hyphenated `disallowed-tools`; agents use camelCase `disallowedTools` — see below.)
 
 ### Agent `.md` frontmatter (`.claude/agents/`)
-Fields like `name`, `description`, `model`, `memory`, `isolation`, `mcpServers`, `color`, `background`, `maxTurns`, `disallowedTools`, `skills`.
+Fields like `name`, `description`, `tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `skills`, `mcpServers`, `hooks`, `memory`, `background`, `effort`, `isolation`, `color`, `initialPrompt`. (Illustrative — see the canonical [sub-agents docs](https://code.claude.com/docs/en/sub-agents) for the complete table.) For agents the `model` field defaults to `inherit`.
 
 The `memory` field enables persistent memory for agents. Scopes:
 - `user` — stored in `~/.claude/agent-memory/<agent-name>/`, available across all projects
@@ -20,6 +20,8 @@ The `memory` field enables persistent memory for agents. Scopes:
 Configure via `/agents` UI or set in frontmatter: `memory: project`.
 
 **Do not mix these.** Agent-specific fields (`memory`, `isolation`, `mcpServers`, etc.) belong in agent `.md` files, not in SKILL.md.
+
+> **Plugin-distributed agents are restricted.** For security, agents loaded from a plugin silently ignore the `hooks`, `mcpServers`, and `permissionMode` frontmatter fields. If a companion agent needs those, ship it in `.claude/agents/` or `~/.claude/agents/` rather than inside the plugin.
 
 ## Skill with `context: fork`
 
@@ -70,7 +72,7 @@ skills:
 ---
 ```
 
-The full content of each listed skill is injected at agent startup.
+The full content of each listed skill is injected at agent startup. A skill with `disable-model-invocation: true` **cannot** be preloaded this way — Claude Code skips it and logs a warning, so don't rely on it here.
 
 ## Managing agents
 

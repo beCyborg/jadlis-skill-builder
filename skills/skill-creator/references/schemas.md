@@ -1,6 +1,6 @@
 # JSON Schemas
 
-This document defines the JSON schemas used by skill-creator-edge.
+This document defines the JSON schemas used by skill-creator.
 
 ## Working with JSON Files
 
@@ -36,23 +36,26 @@ Defines the frontmatter structure for skill files.
 
 ```yaml
 ---
-# Required
-name: string              # kebab-case, max 64 chars (e.g., "my-skill")
-description: string       # no angle brackets; combined with when_to_use, truncated at 1,536 chars
-when_to_use: string      # additional trigger context; appended to description
+# Recommended
+description: string       # no angle brackets; combined with when_to_use, truncated at 1,536 chars. Primary trigger mechanism.
+
+# Optional - Identity
+name: string              # display label; kebab-case, max 64 chars. Defaults to the directory name. The COMMAND you type comes from the directory name (except a plugin-root SKILL.md, where name sets it). Keep name == directory basename to avoid autocomplete glitches.
+when_to_use: string       # additional trigger context; appended to description (counts toward the 1,536-char cap)
 
 # Optional - Invocation Control
 argument-hint: string     # autocomplete hint (e.g., "[file-path]")
 arguments: string|list   # named positional arguments for $name substitution
-disable-model-invocation: boolean  # default false; true = user-only
-user-invocable: boolean   # default true; false = Claude-only
+disable-model-invocation: boolean  # default false; true = user-only. Also blocks the skill from being preloaded into a subagent's skills: field.
+user-invocable: boolean   # default true; false = Claude-only (hidden from / menu)
 
 # Optional - Execution
-allowed-tools: string|list # tools without permission prompt (e.g., "Bash Read" or ["Bash", "Read"]). Supports patterns: "Bash(gh *)"
-model: string             # model override
+allowed-tools: string|list  # pre-approve tools (no permission prompt) while active, e.g. "Bash Read" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)". Does NOT restrict the tool pool.
+disallowed-tools: string|list  # remove tools from the model while active, e.g. "AskUserQuestion". Clears on the next user message. (v2.1.152+)
+model: string             # model override; accepts /model values or "inherit"; turn-scoped (not saved — session model resumes next prompt)
 effort: enum              # low | medium | high | xhigh | max (available levels depend on the model)
 context: enum             # fork (runs in subagent context)
-agent: string             # subagent type when context: fork (Explore, Plan, general-purpose)
+agent: string             # subagent type when context: fork (Explore, Plan, general-purpose, or a custom agent)
 paths: string | list      # glob patterns limiting activation (e.g., "*.py, src/**")
 shell: enum               # bash (default) | powershell
 
@@ -60,10 +63,12 @@ shell: enum               # bash (default) | powershell
 hooks: object             # hooks scoped to skill lifecycle (PreToolUse, PostToolUse, etc.)
 
 # Optional - Metadata
-license: string           # license identifier
-metadata: object          # custom metadata
+license: string           # license identifier (Agent Skills standard)
+metadata: object          # custom metadata (Agent Skills standard)
 ---
 ```
+
+Only `description` is recommended; everything else (including `name`) is optional. `compatibility` is a legacy field some older skills carry — the validator tolerates it with a warning, but it is not a current Claude Code field.
 
 See `references/frontmatter-reference.md` for detailed field documentation, invocation control matrix, and examples.
 
@@ -80,7 +85,7 @@ Variables available in SKILL.md content, replaced at load time:
 | `$N` | Shorthand for `$ARGUMENTS[N]` |
 | `${CLAUDE_SESSION_ID}` | Current session ID |
 | `${CLAUDE_SKILL_DIR}` | Directory containing the skill's SKILL.md file |
-| `${CLAUDE_EFFORT}` | Current effort level (low/medium/high/xhigh/max) (v2.1.120+) |
+| `${CLAUDE_EFFORT}` | Current effort level: low/medium/high/xhigh/max/**ultra** (v2.1.120+). `ultra` is the stored value when ultracode is on. Note: the `effort:` frontmatter field only accepts low/medium/high/xhigh/max — `ultra` appears only as a runtime value here. |
 | `$name` | Named argument from `arguments` frontmatter list |
 
 If `$ARGUMENTS` is not present in the skill body, arguments are appended as `ARGUMENTS: <value>`.
@@ -306,8 +311,8 @@ Output from Benchmark mode. Located at `benchmarks/<timestamp>/benchmark.json`.
   "metadata": {
     "skill_name": "pdf",
     "skill_path": "/path/to/pdf",
-    "executor_model": "claude-sonnet-4-20250514",
-    "analyzer_model": "most-capable-model",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<most-capable-model-name>",
     "timestamp": "2026-01-15T10:30:00Z",
     "evals_run": [1, 2, 3],
     "runs_per_configuration": 3

@@ -46,7 +46,9 @@ This task is pretty important (we are trying to create billions a year in econom
    ```python
    for run in range(3):
        TaskCreate(
-           subject=f"Eval baseline, run {run+1}"
+           subject=f"Eval baseline, run {run+1}",
+           description=f"Execute and grade baseline run {run+1}",
+           activeForm=f"Baseline run {run+1}",
        )
    ```
 
@@ -64,7 +66,7 @@ For each iteration (0, 1, 2, ...):
 
 #### Step 1: Execute (3 Parallel Runs)
 
-Spawn 3 executor subagents in parallel (or run sequentially without subagents — see "Without subagents" below). Update task to `implementing` stage.
+Spawn 3 executor subagents in parallel (or run sequentially without subagents — see "Without subagents" below). Set the task `in_progress` (activeForm: "Running executors").
 
 Spawn a subagent for each run with these instructions:
 
@@ -81,7 +83,7 @@ Execute this task:
 
 #### Step 2: Grade Assertions
 
-Spawn grader subagents (or grade inline — see "Without subagents" below). Update task to `reviewing` stage.
+Spawn grader subagents (or grade inline — see "Without subagents" below). Update `activeForm` to "Grading" (status stays `in_progress`).
 
 **Purpose**: Grading produces structured pass/fail results for tracking pass rates over iterations. The grader also extracts claims and reads user_notes to surface issues that expectations might miss.
 
@@ -173,7 +175,7 @@ Read `feedback.json` when the user is done. Empty feedback means the output was 
 
 #### Step 5: Update State
 
-Update task to `completed` stage. Record results:
+Update the task to `completed`. Record results:
 
 ```python
 if new_version wins majority:

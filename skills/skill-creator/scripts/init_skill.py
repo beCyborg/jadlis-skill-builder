@@ -17,12 +17,13 @@ from pathlib import Path
 
 SKILL_TEMPLATE = """---
 name: {skill_name}
-description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+description: "TODO replace — one line stating what this skill does AND when to use it. Lead with the trigger condition (specific scenarios, file types, or tasks). Third person, single line, no angle brackets."
 # when_to_use: [optional: Additional context for when to invoke this skill — trigger phrases, example requests. Combined with description, truncated at 1,536 chars.]
 # argument-hint: [optional, e.g. "[file-path]"]
 # arguments: [optional: named positional arguments for $name substitution, e.g. "issue branch" or ["issue", "branch"]]
 # allowed-tools: [optional, e.g. "Bash Read Write" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)"]
-# model: [optional, model override]
+# disallowed-tools: [optional, e.g. "AskUserQuestion" — tools removed from the pool while active; clears on the next user message]
+# model: [optional, model override; accepts /model values or "inherit"; turn-scoped]
 # effort: [optional: low/medium/high/xhigh/max (available levels depend on the model)]
 # paths: [optional: glob patterns limiting activation, e.g. "*.py, src/**"]
 # shell: [optional: bash (default) or powershell]
