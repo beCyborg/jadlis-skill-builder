@@ -2,6 +2,21 @@
 
 The description field in SKILL.md frontmatter is the primary mechanism that determines whether Claude invokes a skill. After creating or improving a skill, offer to optimize the description for better triggering accuracy.
 
+### Writing the description (checklist)
+
+Before optimizing, get the basics right — these prevent most "my skill never fires" and "my skill fires on everything" problems:
+
+- **Lead with the trigger condition, not the topic.** Sentence one should state *when* to fire ("Use when the user edits a `.svelte` file or asks to redact a PDF"), not just *what* it covers ("A skill for improving writing"). Crowded sessions truncate descriptions and you can't predict where the cut lands, so the firing condition must come first (within the first ~100 characters).
+- **Write in the third person.** "Processes Excel files…", never "I can help…" or "You can use this…". Mixed point-of-view is injected into the system prompt and hurts discovery.
+- **State both what AND when.** All "when to use" information lives in the `description`/`when_to_use`, never only in the body — the body loads *after* Claude has already decided to trigger.
+- **Scope over-broad triggers.** A vague description ("checks content quality") fires on everything (package.json, README, JSON). Add file-type + directory + action scope ("checks markdown files in `drafts/` when writing or editing article content") so it fires only when relevant. Test descriptions for false positives, not just the happy path.
+- **Add use-when / don't-use-when examples** to the `description`/`when_to_use` for skills that overlap with others — positive *and* near-miss negative examples sharpen routing, especially for cheaper models.
+- **Keep it one line.** A multi-line YAML description can be mis-parsed so the skill silently disappears from the listing. No angle brackets. Front-load regardless of the 1,536-char combined cap.
+
+### Naming the skill
+
+The directory name becomes the command, so name it well: prefer the **gerund form** (`processing-pdfs`, `analyzing-spreadsheets`) or a clear noun/action phrase. Avoid vague names (`helper`, `utils`, `tools`), reserved words (`anthropic`, `claude`), and the bundled-skill names (`run`, `verify`, `loop`, `batch`, `simplify`, `code-review`, `debug`, `claude-api`, `deep-research`) — a collision shadows the built-in. Lowercase letters, digits, and hyphens only; max 64 chars; keep `name` == directory basename.
+
 ### Step 1: Generate trigger eval queries
 
 Create 20 eval queries — a mix of should-trigger and should-not-trigger. Save as JSON:

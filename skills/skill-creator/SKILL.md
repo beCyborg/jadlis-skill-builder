@@ -105,6 +105,8 @@ Start by understanding the user's intent. The current conversation might already
 
 Create a skill when you keep pasting the same instructions, checklist, or multi-step procedure into chat, or when a section of CLAUDE.md has grown into a procedure rather than a fact.
 
+**Triage first — is this actually a skill?** A skill is on-demand, gated by a decision point Claude can skip, so it fits *discrete, invocable workflows* ("do X, then Y, then verify" — the "would I write a function for it?" test). It is a poor fit for *always-on passive knowledge* (framework/API surface, ever-present conventions, code-style rules) — that belongs in CLAUDE.md/AGENTS.md, which loads every turn with no trigger risk. Practitioner evals repeatedly find description-only skills failing to fire on a large fraction of relevant prompts. So: if the user needs something to apply *every time*, steer it to CLAUDE.md or a hook; reserve the skill format for workflows they (or Claude) explicitly trigger. The two can coexist — a rule can live in CLAUDE.md *and* a review skill can reference it.
+
 1. What should this skill enable Claude to do?
 2. When should this skill trigger? (what user phrases/contexts)
 3. What's the expected output format?
@@ -133,7 +135,7 @@ This creates:
 
 Based on interview, fill in the required fields and relevant optional fields:
 
-- **name**: Skill identifier (kebab-case, max 64 chars)
+- **name**: Display label (kebab-case, max 64 chars). The command you type comes from the **directory name**, not this field (except a plugin-root `SKILL.md`) — so keep `name` == directory basename. Every skill is also a slash command (`/<name>`, or `/<plugin>:<name>`) and appears in the `/` menu unless `user-invocable: false`. Check `/skills` for collisions and avoid bundled-skill names (`run`, `verify`, `loop`, `batch`, `simplify`, `code-review`, `debug`, `claude-api`, `deep-research`).
 - **description**: What the skill does — this is the primary triggering mechanism. Front-load key use cases: the combined `description` + `when_to_use` text is truncated at **1,536 characters** in the skill listing. Include both what the skill does AND specific contexts for when to use it. Claude tends to "undertrigger" skills — make descriptions a little "pushy" (e.g., "Build dashboards for internal data. Use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'")
 - **when_to_use** *(optional)*: Additional trigger context — phrases, example requests. Appended to `description` in the skill listing and counts toward the 1,536-char cap. Use `description` for WHAT it does and `when_to_use` for WHEN to invoke it.
 
@@ -144,8 +146,9 @@ Based on interview, fill in the required fields and relevant optional fields:
 | `when_to_use` | Additional trigger context (appended to description, 1,536-char combined cap) |
 | `arguments` | Named positional arguments for `$name` substitution |
 | `argument-hint` | Autocomplete hint, e.g. `[file-path]` |
-| `allowed-tools` | Tools that skip permission prompt |
-| `model` | Model override for this skill |
+| `allowed-tools` | Pre-approve tools (skip permission prompt) — does NOT restrict the pool |
+| `disallowed-tools` | Remove tools from the model while active; clears on next message (v2.1.152+) |
+| `model` | Model override; accepts `/model` values or `inherit`; turn-scoped |
 | `effort` | `low`/`medium`/`high`/`xhigh`/`max` (available levels depend on the model) |
 | `paths` | Glob patterns limiting when skill activates (string or YAML list) |
 | `shell` | Shell for dynamic context commands: `bash` (default) or `powershell` |
@@ -246,13 +249,19 @@ Output: feat(auth): implement JWT-based authentication
 3. **First runs in main agent loop** - not subagent, so user sees the transcript
 4. **Seeing what Claude does** helps user understand and refine requirements
 
-Claude Code watches skill directories — file edits are detected without restarting. However, already-loaded skill content in the current conversation is NOT updated — re-invoke the skill to pick up changes. Creating a new top-level skills directory requires a restart.
+Claude Code watches skill directories — file edits are detected without restarting. However, already-loaded skill content in the current conversation is NOT updated — re-invoke the skill to pick up changes. The iteration loop is: edit SKILL.md → re-invoke (or run `/reload-skills`, v2.1.152+, to re-scan all skill directories without restarting) → re-test. Only a *brand-new top-level* skills directory that didn't exist at session start needs `/reload-skills` or a restart to be picked up.
 
 ### Writing Style
 
 Try to explain to the model why things are important in lieu of heavy-handed musty MUSTs. Use theory of mind and try to make the skill general and not super-narrow to specific examples. Start by writing a draft and then look at it with fresh eyes and improve it.
 
 For the final skill body: state what to do rather than narrating how or why. Every line in a loaded skill is a recurring token cost across turns — optimize for signal density in the artifact, while using explanatory context during the iterative development process.
+
+A few craft points that consistently help:
+- **Prefer affirmative directives over negative-only ones.** "Write in flowing prose with no headers" beats "Don't use bullet points" — models follow positive instructions more reliably.
+- **Put a rule where it fires, not in a wall of rules at the top.** Constraints loaded before Claude knows the task tend to fade out by the time the relevant step runs; inline the constraint at the step it governs. A long top-of-file "Rules" block is an anti-pattern.
+- **Trim what the model already knows.** Don't restate general knowledge — it dilutes context until the skill's actual signal disappears. For style/voice skills, 3–5 real labeled examples teach more than any list of rules.
+- **For must-happen steps, reach for a hook, not prose.** Skill instructions are strong hints the model can rationalize around; a `PreToolUse` hook (exit code 2 blocks + feeds back) enforces deterministically. See `references/frontmatter-reference.md` §6.
 
 ### Test Cases
 
@@ -288,6 +297,8 @@ Once gradable criteria are defined (expectations, success metrics), Claude can:
 - Run tests automatically (via subagents in the background if available, otherwise sequentially)
 - Present results: "I tried X, it improved pass rate by Y%"
 
+**Baseline gate.** A skill earns its place only if it beats the no-skill baseline. Many shared skills make output *worse* or never fire. So when evals exist, run the same prompts **with and without** the skill and require a demonstrable improvement before calling it done — a skill that matches vanilla is pure context cost. Keep the grader/judge independent from whatever produced the output (don't let the same context grade itself), and treat small score deltas as noise rather than signal.
+
 ### Package and Present
 
 After creating or improving a skill, package it:
@@ -296,7 +307,7 @@ After creating or improving a skill, package it:
 scripts/package_skill.py <path/to/skill-folder>
 ```
 
-Direct the user to the resulting `.skill` file path so they can install it.
+Direct the user to the resulting `.skill` file path so they can install it. This is the quick, single-recipient path. For skills that need to be **shared, versioned, or published**, wrap them in a plugin + marketplace instead — see `references/plugin-packaging.md` (layout, `plugin.json`/`marketplace.json`, version-bump rules, `claude plugin validate --strict`).
 
 ---
 
@@ -312,7 +323,7 @@ Skills can use variables that are replaced at load time:
 - `$name` — named argument from the `arguments` frontmatter list
 - `${CLAUDE_SKILL_DIR}` — directory containing the skill's SKILL.md
 - `${CLAUDE_SESSION_ID}` — current session ID
-- `${CLAUDE_EFFORT}` — current effort level (low/medium/high/xhigh/max). Use to adapt skill instructions by effort. (v2.1.120+)
+- `${CLAUDE_EFFORT}` — current effort level (low/medium/high/xhigh/max/`ultra`). Use to adapt skill instructions by effort; `ultra` is the runtime value when ultracode is on. (v2.1.120+)
 
 ### Dynamic Context Injection
 
@@ -473,6 +484,7 @@ The agents/ directory contains instructions for specialized subagents:
 The references/ directory has additional documentation:
 - `references/schemas.md` — JSON structures for evals.json, grading.json, benchmark.json, etc. + frontmatter schema
 - `references/frontmatter-reference.md` — Complete frontmatter field documentation, invocation control, string substitutions, hooks
+- `references/plugin-packaging.md` — Distributing a skill as a plugin: layout, plugin.json/marketplace.json, version semantics, validation
 - `references/skill-lifecycle.md` — Skill content lifecycle, compaction behavior, re-invocation
 - `references/agent-authoring.md` — When skills create companion agents, skill vs agent frontmatter
 - `references/building-blocks.md` — Eval Run, Grade Expectations, Blind Compare, Post-hoc Analysis
