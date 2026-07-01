@@ -1,6 +1,6 @@
 # SKILL.md Frontmatter Reference
 
-> Last audited against Claude Code docs: 2026-05-31 (v2.1.158)
+> Last audited against Claude Code docs: 2026-06-30 (v2.1.197)
 
 Complete reference for all frontmatter fields available in Claude Code SKILL.md files.
 
@@ -19,17 +19,22 @@ Claude Code skills follow the [Agent Skills](https://agentskills.io) open standa
 | `arguments` | string or list | No | Named positional arguments for `$name` substitution in the skill content. Accepts a space-separated string or a YAML list. Names map to argument positions in order. |
 | `allowed-tools` | string or list | No | Pre-approves the listed tools (no permission prompt) while this skill is active. Accepts a space-separated string (`Read Grep Glob`) or YAML list (`["Bash", "Read"]`). Supports patterns: `Bash(gh *)`. **It does not restrict the tool pool** — every tool remains callable; to remove tools use `disallowed-tools`. For project skills, this takes effect only after you accept the workspace-trust dialog, so review project skills before trusting a repo. |
 | `disallowed-tools` | string or list | No | Removes the listed tools from the model's available pool while this skill is active — the inverse of `allowed-tools`. Useful for autonomous/background-loop skills that should never call a tool (e.g. `AskUserQuestion`). Accepts a space/comma string or YAML list. The restriction clears when you send your next message. Works for slash commands too. (v2.1.152+) |
-| `model` | string | No | Model override for this skill. Accepts the same values as `/model`, or `inherit` to keep the active model. The override is **turn-scoped**: it applies for the rest of the current turn and is not saved — the session model resumes on your next prompt. |
+| `model` | string | No | Model override for this skill. Accepts the same values as `/model`, or `inherit` to keep the active model. The override is **turn-scoped**: it applies for the rest of the current turn and is not saved — the session model resumes on your next prompt. A value excluded by an org `availableModels` allowlist is ignored. Note: as of v2.1.197, Claude Sonnet 5 is the Claude Code default model, with a native 1M-token context window. |
 | `effort` | enum | No | Effort level override. Values: `low`, `medium`, `high`, `xhigh`, `max`. Available levels depend on the model. |
 | `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. Uses the same format as path-specific rules. Skills in nested `.claude/skills/` directories and `--add-dir` directories are automatically discovered. |
 | `shell` | enum | No | Shell for dynamic context injection commands. Values: `bash` (default), `powershell`. Requires `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` for PowerShell. |
 | `context` | enum | No | Execution context. Set to `fork` to run the skill in a forked subagent context instead of the main conversation. |
 | `agent` | string | No | Which subagent type to use when `context: fork`. Options: `Explore`, `Plan`, `general-purpose`, or a custom agent name. |
 | `hooks` | object | No | Hooks scoped to this skill's lifecycle. Only active while the skill runs. See section 6. |
-| `disable-model-invocation` | boolean | No (default: `false`) | When `true`, prevents Claude from auto-loading this skill. It will not appear in Claude's context and can only be invoked manually by the user via `/skill-name`. It also cannot be preloaded into a subagent via the agent's `skills:` field (Claude Code skips it with a warning). |
+| `disable-model-invocation` | boolean | No (default: `false`) | When `true`, prevents Claude from auto-loading this skill. It will not appear in Claude's context and can only be invoked manually by the user via `/skill-name`. It also cannot be preloaded into a subagent via the agent's `skills:` field (Claude Code skips it with a warning). As of v2.1.196 it **also blocks the skill from running when a scheduled task fires** with the skill as its prompt — do not set it on skills meant to run from cron/scheduled tasks. |
 | `user-invocable` | boolean | No (default: `true`) | When `false`, hides the skill from the `/` menu. Only Claude can invoke it programmatically. |
 | `license` | string | No | License identifier (e.g. `MIT`, `Apache-2.0`). From Agent Skills standard; not in Claude Code docs. |
 | `metadata` | object | No | Custom key-value pairs for your own use. From Agent Skills standard; not in Claude Code docs. |
+| `display-name` | string | No | Human-friendly display name (Agent Skills standard). |
+| `default-enabled` | boolean | No | Whether the skill starts enabled (Agent Skills standard). |
+| `fallback` | string | No | Fallback behavior hint (Agent Skills standard). |
+
+**Key casing (v2.1.186+):** the `display-name`, `default-enabled`, `fallback`, and `metadata.*` keys are accepted in kebab-case, snake_case, or camelCase (`display-name` / `display_name` / `displayName`). Prefer kebab-case for consistency with the rest of the frontmatter. Malformed YAML frontmatter no longer fails silently — Claude Code loads the skill body with empty metadata instead (v2.1.186+).
 
 ---
 
@@ -46,6 +51,7 @@ How `disable-model-invocation` and `user-invocable` interact to control skill vi
 Key takeaways:
 - Use `disable-model-invocation: true` for rarely-used skills to save context budget.
 - Use `user-invocable: false` for internal/helper skills that Claude should call autonomously but users should not see in the menu.
+- `disable-model-invocation: true` also blocks scheduled-task invocation (v2.1.196+) — a cron/scheduled skill must leave it unset and rely on a narrow `description` plus `disallowed-tools` instead.
 
 ---
 
@@ -60,8 +66,9 @@ Available variables inside SKILL.md content (below the frontmatter):
 | `$N` | Shorthand for `$ARGUMENTS[N]`. E.g. `$0` is the first argument, `$1` is the second. |
 | `$name` | Named argument declared in the `arguments` frontmatter list. Names map to positions in order, so with `arguments: [issue, branch]` the placeholder `$issue` expands to the first argument and `$branch` to the second. |
 | `${CLAUDE_SESSION_ID}` | Current Claude Code session ID. |
-| `${CLAUDE_SKILL_DIR}` | Absolute path to the directory containing this skill's SKILL.md file. |
-| `${CLAUDE_EFFORT}` | Current effort level: `low`, `medium`, `high`, `xhigh`, `max`, or `ultra`. Adapt skill instructions by effort. `ultra` is the stored value when ultracode is on (the `effort:` frontmatter field itself only accepts low/medium/high/xhigh/max — `ultra` shows up only as this runtime value). (v2.1.120+) |
+| `${CLAUDE_SKILL_DIR}` | Absolute path to the directory containing this skill's SKILL.md file. For plugin skills, this is the skill's subdirectory within the plugin, not the plugin root. |
+| `${CLAUDE_EFFORT}` | Current effort level: `low`, `medium`, `high`, `xhigh`, or `max`. Adapt skill instructions by effort. Ultracode is **not** a distinct level — it reports as `xhigh`. (v2.1.120+) |
+| `${CLAUDE_PROJECT_DIR}` | The project root directory — the same path hooks and MCP servers receive as `CLAUDE_PROJECT_DIR`. Applies to both the skill body and `allowed-tools` (e.g. `Bash(${CLAUDE_PROJECT_DIR}/scripts/lint.sh *)`). Use it to reference project-local scripts independent of where the skill is installed. (v2.1.196+) |
 
 If `$ARGUMENTS` is **not** referenced anywhere in the skill content, arguments are automatically appended as `ARGUMENTS: <value>` at the end.
 
