@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, update or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
+description: Create new skills, modify and improve existing skills, and measure skill performance. Runs a guided interview to scope new skills and helps choose an orchestration architecture (inline, forked subagent, dynamic workflow, or agent team). Use when users want to create a skill from scratch, update or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
 ---
 
 # Skill Creator
@@ -51,7 +51,7 @@ Building blocks combine into higher-level workflows for each mode:
 |------|---------|----------|
 | **Eval** | Test skill performance | Executor → Grader → Results |
 | **Improve** | Iteratively optimize skill | Executor → Grader → Comparator → Analyzer → Apply |
-| **Create** | Interactive skill development | Interview → Research → Draft → Run → Refine |
+| **Create** | Interactive skill development | Triage → Interview → Research → (Orchestration fork) → Draft → Run → Refine |
 | **Benchmark** | Standardized performance measurement (requires subagents) | 3x runs per configuration → Aggregate → Analyze |
 
 See `references/mode-diagrams.md` for detailed visual workflow diagrams.
@@ -112,11 +112,13 @@ Create a skill when you keep pasting the same instructions, checklist, or multi-
 3. What's the expected output format?
 4. Should we set up test cases to verify the skill works? Skills with objectively verifiable outputs (file transforms, data extraction, code generation, fixed workflow steps) benefit from test cases. Skills with subjective outputs (writing style, art) often don't need them. Suggest the appropriate default based on the skill type, but let the user decide.
 
-### Interview and Research
+### Interview, Research & House Style
 
-Proactively ask questions about edge cases, input/output formats, example files, success criteria, and dependencies.
+The interview is adaptive: a silent triage gate routes simple skills (advise/format/summarize, one pass) to a single AskUserQuestion screen, and complex ones (fan-out, MCP/API, cron, multi-file mutation, mid-run interaction) to a staged flow — intent, research, architecture, guardrails, evals. Follow `references/creation-interview.md`; it also defines the "just vibe" degradation for users who don't want process.
 
-Check available MCPs - if useful for research (searching docs, finding similar skills, looking up best practices), research in parallel via subagents if available, otherwise inline. Come prepared with context to reduce burden on the user.
+Research runs on two tiers (`references/research-protocol.md`): always verify frontmatter fields and orchestration features against the local Claude Code docs mirror before drafting; offer web/library research (library-docs MCP, web search) as an interview option — never launch it unasked.
+
+If `references/house-style.md` exists, read it in full at the start of every Create run — it carries machine-local conventions (trigger format, allowed-tools form, heavy-skill patterns) that override the generic defaults in this file.
 
 ### Initialize
 
@@ -218,27 +220,9 @@ Claude reads only the relevant reference file.
 
 This goes without saying, but skills must not contain malware, exploit code, or any content that could compromise system security. A skill's contents should not surprise the user in their intent if described. Don't go along with requests to create misleading skills or skills designed to facilitate unauthorized access, data exfiltration, or other malicious activities. Things like a "roleplay as an XYZ" are OK though.
 
-#### Writing Patterns
+#### Writing Patterns and Style
 
-Prefer using the imperative form in instructions.
-
-**Defining output formats** - You can do it like this:
-```markdown
-## Report structure
-ALWAYS use this exact template:
-# [Title]
-## Executive summary
-## Key findings
-## Recommendations
-```
-
-**Examples pattern** - It's useful to include examples. You can format them like this (but if "Input" and "Output" are in the examples you might want to deviate a little):
-```markdown
-## Commit message format
-**Example 1:**
-Input: Added user authentication with JWT tokens
-Output: feat(auth): implement JWT-based authentication
-```
+See `references/skill-writing-craft.md` for body-writing craft: imperative form, output-format and example patterns, affirmative directives, placing rules where they fire, trimming what the model already knows, and reaching for a hook instead of prose for must-happen steps.
 
 ### Immediate Feedback Loop
 
@@ -250,18 +234,6 @@ Output: feat(auth): implement JWT-based authentication
 4. **Seeing what Claude does** helps user understand and refine requirements
 
 Claude Code watches skill directories — file edits are detected without restarting. However, already-loaded skill content in the current conversation is NOT updated — re-invoke the skill to pick up changes. The iteration loop is: edit SKILL.md → re-invoke (or run `/reload-skills`, v2.1.152+, to re-scan all skill directories without restarting) → re-test. Only a *brand-new top-level* skills directory that didn't exist at session start needs `/reload-skills` or a restart to be picked up.
-
-### Writing Style
-
-Try to explain to the model why things are important in lieu of heavy-handed musty MUSTs. Use theory of mind and try to make the skill general and not super-narrow to specific examples. Start by writing a draft and then look at it with fresh eyes and improve it.
-
-For the final skill body: state what to do rather than narrating how or why. Every line in a loaded skill is a recurring token cost across turns — optimize for signal density in the artifact, while using explanatory context during the iterative development process.
-
-A few craft points that consistently help:
-- **Prefer affirmative directives over negative-only ones.** "Write in flowing prose with no headers" beats "Don't use bullet points" — models follow positive instructions more reliably.
-- **Put a rule where it fires, not in a wall of rules at the top.** Constraints loaded before Claude knows the task tend to fade out by the time the relevant step runs; inline the constraint at the step it governs. A long top-of-file "Rules" block is an anti-pattern.
-- **Trim what the model already knows.** Don't restate general knowledge — it dilutes context until the skill's actual signal disappears. For style/voice skills, 3–5 real labeled examples teach more than any list of rules.
-- **For must-happen steps, reach for a hook, not prose.** Skill instructions are strong hints the model can rationalize around; a `PreToolUse` hook (exit code 2 blocks + feeds back) enforces deterministically. See `references/frontmatter-reference.md` §6.
 
 ### Test Cases
 
@@ -299,6 +271,12 @@ Once gradable criteria are defined (expectations, success metrics), Claude can:
 
 **Baseline gate.** A skill earns its place only if it beats the no-skill baseline. Many shared skills make output *worse* or never fire. So when evals exist, run the same prompts **with and without** the skill and require a demonstrable improvement before calling it done — a skill that matches vanilla is pure context cost. Keep the grader/judge independent from whatever produced the output (don't let the same context grade itself), and treat small score deltas as noise rather than signal.
 
+### Choosing an Orchestration Architecture
+
+When the skill being created involves more than single-pass inline work — fan-out over many items, background or scheduled runs, parallel file mutation — pick the execution architecture during the interview, before drafting. Seven options: plain inline, forked subagent (`context: fork`), direct subagents (hub-and-spoke), thin skill + saved workflow, agent teams (experimental, env-gated), hooks as a cross-cutting enforcement layer, and scheduled/cron. The constraint that eliminates options fastest: workflows and cron runs accept **no mid-run user input** — anything interactive must happen before the fan-out launches or after it returns.
+
+See `references/orchestration-guide.md` for frontmatter signatures, the decision matrix, resolution order, and worked examples.
+
 ### Package and Present
 
 After creating or improving a skill, package it:
@@ -323,7 +301,8 @@ Skills can use variables that are replaced at load time:
 - `$name` — named argument from the `arguments` frontmatter list
 - `${CLAUDE_SKILL_DIR}` — directory containing the skill's SKILL.md
 - `${CLAUDE_SESSION_ID}` — current session ID
-- `${CLAUDE_EFFORT}` — current effort level (low/medium/high/xhigh/max/`ultra`). Use to adapt skill instructions by effort; `ultra` is the runtime value when ultracode is on. (v2.1.120+)
+- `${CLAUDE_EFFORT}` — current effort level (low/medium/high/xhigh/max). Use to adapt skill instructions by effort; ultracode is not a distinct level and reports as `xhigh`. (v2.1.120+)
+- `${CLAUDE_PROJECT_DIR}` — project root directory; works in the skill body and in `allowed-tools` rules. (v2.1.196+)
 
 ### Dynamic Context Injection
 
@@ -484,6 +463,12 @@ The agents/ directory contains instructions for specialized subagents:
 The references/ directory has additional documentation:
 - `references/schemas.md` — JSON structures for evals.json, grading.json, benchmark.json, etc. + frontmatter schema
 - `references/frontmatter-reference.md` — Complete frontmatter field documentation, invocation control, string substitutions, hooks
+- `references/orchestration-guide.md` — Seven execution architectures, decision matrix, subagents vs agent teams, worked examples
+- `references/creation-interview.md` — Adaptive Create interview: triage gate, simple/staged paths, orchestration fork, "just vibe" degradation
+- `references/research-protocol.md` — Two-tier research: local docs mirror always, web/library research on request
+- `references/house-style.md` — Machine-local conventions; read in full at the start of every Create run when present
+- `references/skill-writing-craft.md` — Body-writing patterns and style craft
+- `references/integration-testing.md` — TESTS.md capability matrix + gate for skills with live external dependencies
 - `references/plugin-packaging.md` — Distributing a skill as a plugin: layout, plugin.json/marketplace.json, version semantics, validation
 - `references/skill-lifecycle.md` — Skill content lifecycle, compaction behavior, re-invocation
 - `references/agent-authoring.md` — When skills create companion agents, skill vs agent frontmatter
@@ -502,15 +487,4 @@ The references/ directory has additional documentation:
 
 # Conclusion
 
-Just pasting in the overall workflow again for reference:
-
-- Decide what you want the skill to do and roughly how it should do it
-- Write a draft of the skill
-- Create a few test prompts and run claude-with-access-to-the-skill on them
-- Evaluate the results
-  - which can be through automated evals, but also it's totally fine and good for them to be evaluated by the human by hand and that's often the only way
-- Rewrite the skill based on feedback from the evaluation
-- Repeat until you're satisfied
-- Expand the test set and try again at larger scale
-
-Good luck!
+The loop, one more time: scope it (triage → interview → architecture) → draft → run realistic test prompts → evaluate (by hand or with evals) → rewrite → repeat, expanding the test set as the skill stabilizes. Good luck!

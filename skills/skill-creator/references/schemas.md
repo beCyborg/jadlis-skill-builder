@@ -46,7 +46,7 @@ when_to_use: string       # additional trigger context; appended to description 
 # Optional - Invocation Control
 argument-hint: string     # autocomplete hint (e.g., "[file-path]")
 arguments: string|list   # named positional arguments for $name substitution
-disable-model-invocation: boolean  # default false; true = user-only. Also blocks the skill from being preloaded into a subagent's skills: field.
+disable-model-invocation: boolean  # default false; true = user-only. Also blocks preloading into a subagent's skills: field AND scheduled-task invocation (v2.1.196+).
 user-invocable: boolean   # default true; false = Claude-only (hidden from / menu)
 
 # Optional - Execution
@@ -65,6 +65,10 @@ hooks: object             # hooks scoped to skill lifecycle (PreToolUse, PostToo
 # Optional - Metadata
 license: string           # license identifier (Agent Skills standard)
 metadata: object          # custom metadata (Agent Skills standard)
+display-name: string      # human-friendly display name (Agent Skills standard)
+default-enabled: boolean  # whether the skill starts enabled (Agent Skills standard)
+fallback: string          # fallback behavior hint (Agent Skills standard)
+# display-name/default-enabled/fallback/metadata.* accept kebab/snake/camelCase keys (v2.1.186+)
 ---
 ```
 
@@ -84,8 +88,9 @@ Variables available in SKILL.md content, replaced at load time:
 | `$ARGUMENTS[N]` | Specific argument by 0-based index |
 | `$N` | Shorthand for `$ARGUMENTS[N]` |
 | `${CLAUDE_SESSION_ID}` | Current session ID |
-| `${CLAUDE_SKILL_DIR}` | Directory containing the skill's SKILL.md file |
-| `${CLAUDE_EFFORT}` | Current effort level: low/medium/high/xhigh/max/**ultra** (v2.1.120+). `ultra` is the stored value when ultracode is on. Note: the `effort:` frontmatter field only accepts low/medium/high/xhigh/max — `ultra` appears only as a runtime value here. |
+| `${CLAUDE_SKILL_DIR}` | Directory containing the skill's SKILL.md file (for plugin skills: the skill's subdirectory, not the plugin root) |
+| `${CLAUDE_EFFORT}` | Current effort level: low/medium/high/xhigh/max (v2.1.120+). Ultracode is not a distinct level — it reports as `xhigh`. |
+| `${CLAUDE_PROJECT_DIR}` | Project root directory — same path hooks receive as `CLAUDE_PROJECT_DIR`. Works in the skill body and in `allowed-tools` rules. (v2.1.196+) |
 | `$name` | Named argument from `arguments` frontmatter list |
 
 If `$ARGUMENTS` is not present in the skill body, arguments are appended as `ARGUMENTS: <value>`.
