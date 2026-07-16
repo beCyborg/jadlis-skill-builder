@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Initialize JSON files with the correct structure for skill-creator-edge.
+Initialize JSON files with the correct structure for skill-creator.
 
 Creates template JSON files that can be filled in.
 

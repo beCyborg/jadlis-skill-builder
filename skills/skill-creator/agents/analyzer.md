@@ -91,6 +91,7 @@ Save structured analysis to `{output_path}`.
 ## Output Format
 
 Write a JSON file with this structure:
+<!-- SYNC: references/schemas.md#analysisjson — keep this inline schema in step with the canonical one -->
 
 ```json
 {

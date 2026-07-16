@@ -20,18 +20,21 @@ Evals serve to:
    → Scan skill for dependencies, confirm availability with user
 
 2. Prepare (scripts/prepare_eval.py)
-   → Create task, copies skill, stages files
+   → Create task, copies skill, stages files (both configs)
 
 3. Execute (agents/executor.md)
-   → Set task in_progress (activeForm: "Running executor"), spawn executor sub-agent
+   → Set task in_progress (activeForm: "Running executor")
+   → Spawn with_skill AND without_skill executors in the SAME turn
    → Executor reads skill, runs prompt, saves transcript
+   → Capture total_tokens/duration_ms from each task notification → timing.json
 
 4. Grade (agents/grader.md)
-   → Update activeForm to "Grading", spawn grader sub-agent
+   → Update activeForm to "Grading", spawn grader sub-agent per run
    → Grader reads transcript + outputs, evaluates expectations
 
 5. Complete task, display results
    → Pass/fail per expectation, overall pass rate, metrics
+   → Offer the eval viewer (eval-viewer/generate_review.py)
 ```
 
 ## Step 0: Setup
@@ -64,11 +67,14 @@ Before running evals, scan the skill for dependencies:
 
 ## Step 2: Prepare and Create Task
 
-Run prepare script and create task:
+Run the prepare script for each configuration and create a task. Run directories follow the nested layout from `references/workspace-structure.md` (`eval-<id>/<config>/`) — the same layout `aggregate_benchmark.py` reads:
 
 ```bash
-scripts/prepare_eval.py <skill-path> <eval-id> --output-dir <workspace>/eval-<id>/
+scripts/prepare_eval.py <skill-path> <eval-id> --output-dir <workspace>/eval-<id>/with_skill/
+scripts/prepare_eval.py <skill-path> <eval-id> --output-dir <workspace>/eval-<id>/without_skill/ --no-skill
 ```
+
+Each run directory gets an `eval_metadata.json` (prompt, assertions, staged paths). Give evals descriptive `eval_name`s where possible — they read better in the viewer than bare eval numbers (see `references/schemas.md`).
 
 ```python
 task_id = TaskCreate(
@@ -81,24 +87,26 @@ TaskUpdate(taskId=task_id, status="in_progress")
 
 ## Step 3: Execute
 
-Update `activeForm` to "Running executor" (status stays `in_progress`) and run the executor:
+Update `activeForm` to "Running executor" (status stays `in_progress`) and run the executors:
 
 ```bash
 echo "{\"executor_start\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > <run-dir>/timing.json
 ```
 
-**With subagents**: Spawn an executor subagent with these instructions:
+**With subagents**: Spawn the `with_skill` AND `without_skill` executors **in the same turn** — don't run with-skill first and come back for the baseline later; launching everything at once means it all finishes around the same time. One executor per configuration, with these instructions:
 
 ```
 Read agents/executor.md at: <skill-creator-path>/agents/executor.md
 
 Execute this eval:
-- Skill path: <workspace>/skill/
+- Skill path: <workspace>/eval-<id>/<config>/skill/   (omit for without_skill)
 - Prompt: <eval prompt from eval_metadata.json>
-- Input files: <workspace>/eval-<id>/inputs/
-- Save transcript to: <workspace>/eval-<id>/transcript.md
-- Save outputs to: <workspace>/eval-<id>/outputs/
+- Input files: <workspace>/eval-<id>/<config>/inputs/
+- Save transcript to: <workspace>/eval-<id>/<config>/outputs/transcript.md
+- Save outputs to: <workspace>/eval-<id>/<config>/outputs/
 ```
+
+**Capture timing as notifications arrive:** each background executor's completion notification carries `total_tokens` and `duration_ms` — this is the *only* place they're reported. Write them into that run's `timing.json` immediately, notification by notification, rather than batching (format in `references/schemas.md`).
 
 **Without subagents**: Read `agents/executor.md` and follow the procedure directly — execute the eval, save the transcript, and produce outputs inline.
 
@@ -115,10 +123,12 @@ Read agents/grader.md at: <skill-creator-path>/agents/grader.md
 
 Grade these expectations:
 - Assertions: <list from eval_metadata.json>
-- Transcript: <workspace>/eval-<id>/transcript.md
-- Outputs: <workspace>/eval-<id>/outputs/
-- Save grading to: <workspace>/eval-<id>/grading.json
+- Transcript: <workspace>/eval-<id>/<config>/outputs/transcript.md
+- Outputs: <workspace>/eval-<id>/<config>/outputs/
+- Save grading to: <workspace>/eval-<id>/<config>/grading.json
 ```
+
+The `expectations[]` entries in grading.json must use exactly the fields `text`/`passed`/`evidence` — the eval viewer shows zeros otherwise (see `references/schemas.md`).
 
 **Without subagents**: Read `agents/grader.md` and follow the procedure directly — evaluate expectations against the transcript and outputs, then save grading.json.
 
@@ -133,6 +143,15 @@ Update the task to `completed` (`TaskUpdate(taskId=task_id, status="completed")`
 - Execution metrics from grading.json
 - Wall clock time from timing.json
 - **User notes summary**: Uncertainties, workarounds, and suggestions from the executor (may reveal issues even when expectations pass)
+
+**Offer the eval viewer.** For anything beyond a single quick run, offer to open the browsable review UI instead of (or in addition to) the text summary — it renders outputs inline and collects per-eval feedback:
+
+```bash
+nohup python <skill-creator-path>/eval-viewer/generate_review.py <workspace> \
+  --skill-name "<name>" > /dev/null 2>&1 &
+```
+
+Pass `--benchmark <workspace>/benchmark.json` if one exists. In headless environments (no display/browser), use `--static <output_path>` to write a standalone HTML file instead of starting a server — see `references/environments.md`.
 
 ## Comparison Workflow
 

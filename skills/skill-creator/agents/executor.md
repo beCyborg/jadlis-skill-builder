@@ -128,6 +128,7 @@ No uncertainties, issues, or suggestions to report. Execution completed as expec
 ## Metrics Format
 
 Save `{output_dir}/metrics.json` with tool usage and output size:
+<!-- SYNC: references/schemas.md#metricsjson — keep this inline schema in step with the canonical one -->
 
 ```json
 {

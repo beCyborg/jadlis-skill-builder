@@ -1,6 +1,6 @@
 # Choosing an Orchestration Architecture
 
-> Last audited against Claude Code docs: 2026-06-30 (v2.1.197)
+> Last audited against Claude Code docs: 2026-07-16 (v2.1.211)
 
 When a new skill involves more than a single pass of inline work — fan-out over many
 items, background execution, scheduled runs, enforcement — the most consequential
@@ -43,6 +43,12 @@ Right when: roughly 2–8 parallel units, especially when the flow needs **user 
 between stages** (interview → fan-out → review) — the main session stays interactive
 between spawns. See `references/agent-authoring.md` for writing the agent files.
 
+Since v2.1.198 subagents run **in the background by default**: the hub keeps working
+while they run and receives each result via a `<task-notification>` when it finishes.
+Design hub skills to process notifications as they arrive (and to persist anything
+the notification carries that isn't stored elsewhere, e.g. token/duration metrics)
+rather than assuming synchronous returns.
+
 ### 4. Thin skill + saved Workflow
 
 The heavyweight fan-out pattern. The skill is a thin interactive shell; the
@@ -66,6 +72,22 @@ deterministic in structure, budget-scaled loops. The hard constraint: **a workfl
 accepts no mid-run user input** — only permission prompts can pause it. Anything
 interactive must happen in Phase A or C.
 
+Environment knobs to be aware of when authoring workflow-backed skills:
+- **Size guideline** (v2.1.202+): the "Dynamic workflow size" setting in `/config`
+  (`workflowSizeGuideline`: small/medium/large) is sent to Claude as *advice* on
+  agent count — a prompt calling for a different scale still overrides it.
+- **Large-workflow warning** (v2.1.203+): a run that schedules >25 agents or whose
+  projected token total passes 1.5M gets a `Large workflow` warning in the task
+  panel, pointing to `/workflows` where the user can stop it. The size guideline's
+  agent count replaces the default threshold.
+- **Kill switch**: `"disableWorkflows": true` in settings (or
+  `CLAUDE_CODE_DISABLE_WORKFLOWS=1`) disables dynamic workflows entirely — a
+  workflow-backed skill should degrade to architecture 3 or fail with a clear
+  message, not assume the Workflow tool exists.
+- **MCP tools**: workflow agents reach session-connected MCP tools via `ToolSearch`
+  (deferred tool schemas load on demand) — but interactively-authenticated servers
+  may be absent in headless/cron runs.
+
 ### 5. Agent teams (experimental)
 
 Peer-to-peer parallelism: teammates share a task list, claim work, and message each
@@ -74,7 +96,9 @@ other directly instead of reporting to a hub. Requires
 implicit team — spawn teammates with the Agent tool's `name` parameter; there is no
 setup step (the old `TeamCreate`/`TeamDelete` tools are gone). Practical size: 3–5
 teammates. Note: a subagent definition's `skills:` and `mcpServers:` fields are
-**not** applied when it runs as a teammate.
+**not** applied when it runs as a teammate — teammates load skills and MCP servers
+from project/user settings like a regular session, so a team-mode skill cannot rely
+on per-agent preloading.
 
 Right when: workers must debate, challenge each other, or self-coordinate — 
 competing debugging hypotheses, cross-layer features, adversarial review. Highest

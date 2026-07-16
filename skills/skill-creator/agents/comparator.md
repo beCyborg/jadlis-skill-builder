@@ -91,6 +91,7 @@ Save results to a JSON file at the path specified (or `comparison.json` if not s
 ## Output Format
 
 Write a JSON file with this structure:
+<!-- SYNC: references/schemas.md#comparisonjson — keep this inline schema in step with the canonical one -->
 
 ```json
 {

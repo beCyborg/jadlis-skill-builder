@@ -77,7 +77,7 @@ Unlike Eval mode (which runs individual evals), Benchmark mode:
 
 ## Spawning Executors
 
-Run executor subagents in the background for parallelism. When each agent completes, capture the execution metrics (tokens consumed, tool calls, duration) from the completion notification.
+Run executor subagents in the background for parallelism. Spawn the `with_skill` and `without_skill` runs **in the same turn** — don't run one configuration first and come back for the other; launching everything at once means it all finishes around the same time. When each agent completes, capture the execution metrics (tokens consumed, tool calls, duration) from the completion notification.
 
 For example, in Claude Code, background subagents deliver a `<task-notification>` with a `<usage>` block:
 
@@ -100,7 +100,7 @@ Extract from each completed executor's metrics:
 
 The exact format of completion notifications varies by environment — look for token counts, tool call counts, and duration in whatever format your environment provides.
 
-Record these per-run metrics alongside the grading results. The aggregate script can then compute mean/stddev/min/max across runs for each configuration.
+Write these into the run's `timing.json` **immediately as each notification arrives** — the notification is the only place `total_tokens`/`duration_ms` are reported; they aren't persisted anywhere else, and batching risks losing them (format in `references/schemas.md`). The aggregate script then computes mean/stddev/min/max across runs for each configuration, falling back to `timing.json` when `grading.json` lacks time/tokens.
 
 ## Scripts
 
