@@ -106,6 +106,7 @@ Save results to `{outputs_dir}/../grading.json` (sibling to outputs_dir).
 ## Output Format
 
 Write a JSON file with this structure:
+<!-- SYNC: references/schemas.md#gradingjson — keep this inline schema in step with the canonical one -->
 
 ```json
 {

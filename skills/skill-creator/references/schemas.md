@@ -179,6 +179,7 @@ Tracks version progression in Improve mode. Located at workspace root.
 ---
 
 ## grading.json
+<!-- SYNC: agents/grader.md inlines this schema — update both together -->
 
 Output from the grader agent. Located at `<run-dir>/grading.json`.
 
@@ -244,6 +245,8 @@ Output from the grader agent. Located at `<run-dir>/grading.json`.
 }
 ```
 
+> **Exact field names matter.** The eval viewer and `aggregate_benchmark.py` require `expectations[]` entries to use exactly `text`, `passed`, `evidence` — variants like `name`/`met`/`details` silently render as zeros in the viewer.
+
 **Fields:**
 - `expectations[]`: Graded expectations with evidence
 - `summary`: Aggregate pass/fail counts
@@ -256,6 +259,7 @@ Output from the grader agent. Located at `<run-dir>/grading.json`.
 ---
 
 ## metrics.json
+<!-- SYNC: agents/executor.md inlines this schema — update both together -->
 
 Output from the executor agent. Located at `<run-dir>/outputs/metrics.json`.
 
@@ -304,6 +308,35 @@ Wall clock timing for a run. Located at `<run-dir>/timing.json`.
   "total_duration_seconds": 191.0
 }
 ```
+
+**Capturing tokens from background subagents:** when an executor runs as a background subagent, the task-completion notification is the *only* place `total_tokens` and `duration_ms` are reported — they aren't persisted anywhere else. Write them into `timing.json` immediately as each notification arrives:
+
+```json
+{
+  "total_tokens": 84852,
+  "duration_ms": 23332,
+  "total_duration_seconds": 23.3
+}
+```
+
+`aggregate_benchmark.py` falls back to `timing.json` for time/tokens when `grading.json` lacks them.
+
+---
+
+## eval_metadata.json
+
+Written by `prepare_eval.py` into each run directory; can also be authored manually for ad-hoc runs. Minimal manual form:
+
+```json
+{
+  "eval_id": 0,
+  "eval_name": "descriptive-name-here",
+  "prompt": "The user's task prompt",
+  "assertions": []
+}
+```
+
+`eval_name` is optional — a short descriptive slug of what the eval tests (shown in the viewer instead of a bare "eval-0"). `prepare_eval.py` additionally records staged paths (`input_files`, `skill_path`, `outputs_dir`, ...).
 
 ---
 
@@ -381,9 +414,12 @@ Output from Benchmark mode. Located at `benchmarks/<timestamp>/benchmark.json`.
 - `run_summary`: Statistical aggregates per configuration
 - `notes`: Freeform observations from the analyzer
 
+> **Exact field names matter.** If you generate `benchmark.json` by hand instead of via `aggregate_benchmark.py`, the viewer requires exactly `configuration` (not `config`) and nested `result.pass_rate` (not a top-level `pass_rate`) — mismatches show as empty/zero benchmark tabs. Configuration names other than `with_skill`/`without_skill` (e.g. `new_skill`/`old_skill`) are fine: the aggregator discovers them dynamically.
+
 ---
 
 ## comparison.json
+<!-- SYNC: agents/comparator.md inlines this schema — update both together -->
 
 Output from blind comparator. Located at `<grading-dir>/comparison-N.json`.
 
@@ -459,6 +495,7 @@ Output from blind comparator. Located at `<grading-dir>/comparison-N.json`.
 ---
 
 ## analysis.json
+<!-- SYNC: agents/analyzer.md inlines this schema — update both together -->
 
 Output from post-hoc analyzer. Located at `<grading-dir>/analysis.json`.
 

@@ -39,7 +39,9 @@ in parallel. If you can, you'll delegate work to executor, grader, comparator,
 and analyzer agents. If not, you'll do all work inline, sequentially.
 
 This affects which modes are available and how they execute. The core
-workflows are the same — only the execution strategy changes.
+workflows are the same — only the execution strategy changes. Environment-specific
+mechanics (Claude.ai inline runs, Cowork static viewer/feedback) are in
+`references/environments.md` — read it when running outside Claude Code.
 
 ---
 
@@ -137,42 +139,19 @@ This creates:
 
 Based on interview, fill in the required fields and relevant optional fields:
 
-- **name**: Display label (kebab-case, max 64 chars). The command you type comes from the **directory name**, not this field (except a plugin-root `SKILL.md`) — so keep `name` == directory basename. Every skill is also a slash command (`/<name>`, or `/<plugin>:<name>`) and appears in the `/` menu unless `user-invocable: false`. Check `/skills` for collisions and avoid bundled-skill names (`run`, `verify`, `loop`, `batch`, `simplify`, `code-review`, `debug`, `claude-api`, `deep-research`).
+- **name**: Display label (kebab-case, max 64 chars). The command you type comes from the **directory name**, not this field (except a plugin-root `SKILL.md`) — so keep `name` == directory basename. Every skill is also a slash command (`/<name>`, or `/<plugin>:<name>`) and appears in the `/` menu unless `user-invocable: false`. Check `/skills` for collisions and avoid bundled-skill and built-in command names (`run`, `verify`, `run-skill-generator`, `loop`, `batch`, `simplify`, `code-review`, `debug`, `doctor`, `dataviz`, `design-sync`, `claude-api`, `fewer-permission-prompts`, `update-config`, `deep-research`, `init`, `review`, `security-review`, `schedule`).
 - **description**: What the skill does — this is the primary triggering mechanism. Front-load key use cases: the combined `description` + `when_to_use` text is truncated at **1,536 characters** in the skill listing. Include both what the skill does AND specific contexts for when to use it. Claude tends to "undertrigger" skills — make descriptions a little "pushy" (e.g., "Build dashboards for internal data. Use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'")
 - **when_to_use** *(optional)*: Additional trigger context — phrases, example requests. Appended to `description` in the skill listing and counts toward the 1,536-char cap. Use `description` for WHAT it does and `when_to_use` for WHEN to invoke it.
 
-**Optional fields** (see `references/frontmatter-reference.md` for full details):
+**Optional fields**: invocation control (`when_to_use`, `arguments`, `argument-hint`, `disable-model-invocation`, `user-invocable`), execution (`allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`/`agent`, `paths`, `shell`), lifecycle (`hooks`). Full field table, semantics, and version notes: `references/frontmatter-reference.md` §1; quick schema: `references/schemas.md`.
 
-| Field | Description |
-|-------|-------------|
-| `when_to_use` | Additional trigger context (appended to description, 1,536-char combined cap) |
-| `arguments` | Named positional arguments for `$name` substitution |
-| `argument-hint` | Autocomplete hint, e.g. `[file-path]` |
-| `allowed-tools` | Pre-approve tools (skip permission prompt) — does NOT restrict the pool |
-| `disallowed-tools` | Remove tools from the model while active; clears on next message (v2.1.152+) |
-| `model` | Model override; accepts `/model` values or `inherit`; turn-scoped |
-| `effort` | `low`/`medium`/`high`/`xhigh`/`max` (available levels depend on the model) |
-| `paths` | Glob patterns limiting when skill activates (string or YAML list) |
-| `shell` | Shell for dynamic context commands: `bash` (default) or `powershell` |
-| `context` | `fork` — run in a forked subagent context |
-| `agent` | Subagent type when `context: fork` (Explore, Plan, general-purpose) |
-| `disable-model-invocation` | `true` to prevent Claude from auto-loading |
-| `user-invocable` | `false` to hide from `/` menu (Claude-only skill) |
-| `hooks` | Hooks scoped to this skill's lifecycle |
-
-**Invocation control**: By default, both user and Claude can invoke a skill. Set `disable-model-invocation: true` for user-only skills (e.g., dangerous operations). Set `user-invocable: false` for Claude-only background knowledge skills that shouldn't appear in the `/` menu.
+**Invocation control**: By default, both user and Claude can invoke a skill. Set `disable-model-invocation: true` for user-only skills (e.g., dangerous operations; also blocks preload into subagents and scheduled-task runs). Set `user-invocable: false` for Claude-only background knowledge skills that shouldn't appear in the `/` menu. Matrix and takeaways: `references/frontmatter-reference.md` §2.
 
 Skills are discovered from `.claude/skills/` in the starting directory and every parent directory up to the repo root. Directories added via `--add-dir` also have their `.claude/skills/` loaded automatically. Useful for monorepo setups.
 
 ### skillOverrides (settings-based visibility)
 
-Control skill visibility from `settings.json` without editing SKILL.md. The `/skills` menu writes it for you (highlight a skill, press Space to cycle states). Values: `"on"`, `"name-only"`, `"user-invocable-only"`, `"off"`.
-
-**Caveat (v2.1.129+):** As of May 2026, skillOverrides only takes effect from managed/policy settings. User and project settings overrides do not yet propagate. Track issue #50631.
-
-Plugin skills are not affected; manage those through `/plugin`.
-
-Control which skills Claude can invoke using permission rules: `Skill(name)` for exact match, `Skill(name *)` for prefix match.
+Control skill visibility from `settings.json` without editing SKILL.md — values `"on"`/`"name-only"`/`"user-invocable-only"`/`"off"`; the `/skills` menu writes it for you. Caveats (managed-settings-only propagation, Remote Control/SDK hiding, plugin skills excluded) and permission rules (`Skill(name)` / `Skill(name *)`): `references/frontmatter-reference.md` §8.
 
 ### Skill Writing Guide
 
@@ -295,14 +274,7 @@ These features extend what skills can do. See `references/frontmatter-reference.
 
 ### String Substitutions
 
-Skills can use variables that are replaced at load time:
-- `$ARGUMENTS` — all arguments passed to the skill
-- `$ARGUMENTS[N]` or `$N` — specific argument by index
-- `$name` — named argument from the `arguments` frontmatter list
-- `${CLAUDE_SKILL_DIR}` — directory containing the skill's SKILL.md
-- `${CLAUDE_SESSION_ID}` — current session ID
-- `${CLAUDE_EFFORT}` — current effort level (low/medium/high/xhigh/max). Use to adapt skill instructions by effort; ultracode is not a distinct level and reports as `xhigh`. (v2.1.120+)
-- `${CLAUDE_PROJECT_DIR}` — project root directory; works in the skill body and in `allowed-tools` rules. (v2.1.196+)
+Variables replaced at load time: `$ARGUMENTS` / `$N` / `$name` (arguments), `${CLAUDE_SKILL_DIR}`, `${CLAUDE_SESSION_ID}`, `${CLAUDE_EFFORT}`, `${CLAUDE_PROJECT_DIR}`. Full table, examples, and edge cases (auto-append when `$ARGUMENTS` is absent, unmatched `$N` preserved verbatim): `references/frontmatter-reference.md` §3.
 
 ### Dynamic Context Injection
 
@@ -316,7 +288,7 @@ Include the word "ultrathink" anywhere in skill content to enable extended think
 
 ### Skills as Subagents
 
-Use the `/agents` command to interactively create, configure, and manage custom agents.
+To create or manage custom agents, ask Claude or edit `.claude/agents/*.md` directly (the `/agents` wizard was removed in v2.1.198).
 
 Set `context: fork` and `agent` to run the skill in an independent subagent:
 
@@ -347,13 +319,7 @@ When invoked, skill content stays in the conversation for the session. On compac
 
 ### Context Budget
 
-Skill descriptions consume ~1% of the context window (fallback: 8,000 characters). The combined `description` + `when_to_use` text is truncated at 1,536 characters in the skill listing — front-load key use cases. Keep SKILL.md under 500 lines; use `references/` for detailed content. Check with `/context`.
-
-Override the budget:
-- `skillListingBudgetFraction` in settings.json (v2.1.105+). **Note:** currently calculates against ~200K baseline, not the actual context window. On 1M models, raise proportionally (e.g., 0.05). Track issue #57941.
-- `maxSkillDescriptionChars` — per-skill character cap (v2.1.105+)
-- `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var — fixed character count
-- Run `/doctor` to check if your skill budget is overflowing and which skills are affected.
+Skill descriptions consume ~1% of the context window; combined `description` + `when_to_use` is truncated at 1,536 characters — front-load key use cases. Keep SKILL.md under 500 lines. Budget overrides (`skillListingBudgetFraction`, `maxSkillDescriptionChars`, `SLASH_COMMAND_TOOL_CHAR_BUDGET`) and diagnostics (`/context`, `/doctor`): `references/frontmatter-reference.md` §7.
 
 ### Validation
 
@@ -460,6 +426,9 @@ The agents/ directory contains instructions for specialized subagents:
 - `agents/comparator.md` — How to do blind A/B comparison between two outputs
 - `agents/analyzer.md` — How to analyze why one version beat another
 
+The eval-viewer/ directory contains the browsable review UI:
+- `eval-viewer/generate_review.py` — generate/serve the review page (Outputs + Benchmark tabs, per-eval feedback); `--static` for headless environments
+
 The references/ directory has additional documentation:
 - `references/schemas.md` — JSON structures for evals.json, grading.json, benchmark.json, etc. + frontmatter schema
 - `references/frontmatter-reference.md` — Complete frontmatter field documentation, invocation control, string substitutions, hooks
@@ -480,6 +449,7 @@ The references/ directory has additional documentation:
 - `references/description-optimization.md` — Description optimization 4-step workflow
 - `references/eval-mode.md` — Complete Eval workflow
 - `references/benchmark-mode.md` — Complete Benchmark workflow
+- `references/environments.md` — Claude.ai / Cowork adaptations (inline runs, static viewer, feedback.json)
 - `references/mode-diagrams.md` — Visual workflow diagrams
 - `references/workspace-structure.md` — Directory layouts for each mode
 

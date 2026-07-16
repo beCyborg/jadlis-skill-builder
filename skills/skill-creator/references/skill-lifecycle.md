@@ -25,6 +25,8 @@ If a skill seems to stop influencing behavior after the first response, the cont
 
 Editing a skill file on disk does not update the already-loaded content in the current session — you must re-invoke the skill to pick up changes.
 
+Re-invoking is cheap when nothing changed: as of v2.1.202, re-invoking an already-loaded skill no longer appends a duplicate copy of its instructions to context (before that, each re-invocation duplicated the content).
+
 ## Live change detection
 
 Claude Code watches the already-active skill directories — `~/.claude/skills/`, the project `.claude/skills/`, and `.claude/skills/` inside an `--add-dir` directory. Edits, additions, and removals within those are picked up live. However:

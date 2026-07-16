@@ -15,7 +15,7 @@ Before optimizing, get the basics right — these prevent most "my skill never f
 
 ### Naming the skill
 
-The directory name becomes the command, so name it well: prefer the **gerund form** (`processing-pdfs`, `analyzing-spreadsheets`) or a clear noun/action phrase. Avoid vague names (`helper`, `utils`, `tools`), reserved words (`anthropic`, `claude`), and the bundled-skill names (`run`, `verify`, `loop`, `batch`, `simplify`, `code-review`, `debug`, `claude-api`, `deep-research`) — a collision shadows the built-in. Lowercase letters, digits, and hyphens only; max 64 chars; keep `name` == directory basename.
+The directory name becomes the command, so name it well: prefer the **gerund form** (`processing-pdfs`, `analyzing-spreadsheets`) or a clear noun/action phrase. Avoid vague names (`helper`, `utils`, `tools`), reserved words (`anthropic`, `claude`), and the bundled-skill and built-in command names (`run`, `verify`, `run-skill-generator`, `loop`, `batch`, `simplify`, `code-review`, `debug`, `doctor`, `dataviz`, `design-sync`, `claude-api`, `fewer-permission-prompts`, `update-config`, `deep-research`, `init`, `review`, `security-review`, `schedule`) — a collision shadows the built-in. Lowercase letters, digits, and hyphens only; max 64 chars; keep `name` == directory basename.
 
 ### Step 1: Generate trigger eval queries
 

@@ -39,7 +39,7 @@ This task is pretty important (we are trying to create billions a year in econom
 3. **Verify or create evals**:
    - Check for existing `evals/evals.json`
    - If missing, ask user for 2-3 example tasks and create evals
-   - Use `scripts/init_json.py evals` to create with correct structure
+   - Use `scripts/init_json.py evals evals/evals.json` to create with correct structure (the output path is required)
 
 4. **Create tasks** for baseline:
 

@@ -1,6 +1,6 @@
 # SKILL.md Frontmatter Reference
 
-> Last audited against Claude Code docs: 2026-06-30 (v2.1.197)
+> Last audited against Claude Code docs: 2026-07-16 (v2.1.211)
 
 Complete reference for all frontmatter fields available in Claude Code SKILL.md files.
 
@@ -17,9 +17,9 @@ Claude Code skills follow the [Agent Skills](https://agentskills.io) open standa
 | `when_to_use` | string | No | Additional context for when Claude should invoke the skill — trigger phrases, example requests. Appended to `description` in the skill listing and counts toward the 1,536-character cap. |
 | `argument-hint` | string | No | Hint shown during autocomplete in the `/` menu, e.g. `[issue-number]`, `[file-path]`. |
 | `arguments` | string or list | No | Named positional arguments for `$name` substitution in the skill content. Accepts a space-separated string or a YAML list. Names map to argument positions in order. |
-| `allowed-tools` | string or list | No | Pre-approves the listed tools (no permission prompt) while this skill is active. Accepts a space-separated string (`Read Grep Glob`) or YAML list (`["Bash", "Read"]`). Supports patterns: `Bash(gh *)`. **It does not restrict the tool pool** — every tool remains callable; to remove tools use `disallowed-tools`. For project skills, this takes effect only after you accept the workspace-trust dialog, so review project skills before trusting a repo. |
+| `allowed-tools` | string or list | No | Pre-approves the listed tools (no permission prompt) while this skill is active. Accepts a space-separated string (`Read Grep Glob`) or YAML list (`["Bash", "Read"]`). Supports patterns: `Bash(gh *)`. **It does not restrict the tool pool** — every tool remains callable; to remove tools use `disallowed-tools`. For project skills, this takes effect only after you accept the workspace-trust dialog, so review project skills before trusting a repo. Context: the default permission mode is named **Manual** as of v2.1.200 (`manual` is accepted alongside `default`), so unlisted tools prompt unless the user switched modes. |
 | `disallowed-tools` | string or list | No | Removes the listed tools from the model's available pool while this skill is active — the inverse of `allowed-tools`. Useful for autonomous/background-loop skills that should never call a tool (e.g. `AskUserQuestion`). Accepts a space/comma string or YAML list. The restriction clears when you send your next message. Works for slash commands too. (v2.1.152+) |
-| `model` | string | No | Model override for this skill. Accepts the same values as `/model`, or `inherit` to keep the active model. The override is **turn-scoped**: it applies for the rest of the current turn and is not saved — the session model resumes on your next prompt. A value excluded by an org `availableModels` allowlist is ignored. Note: as of v2.1.197, Claude Sonnet 5 is the Claude Code default model, with a native 1M-token context window. |
+| `model` | string | No | Model override for this skill. Accepts the same values as `/model`, or `inherit` to keep the active model. The override is **turn-scoped**: it applies for the rest of the current turn and is not saved — the session model resumes on your next prompt. A value excluded by an org `availableModels` allowlist is ignored. The session default is the recommended model for the account type (an org default set by an admin overrides it) — don't hardcode assumptions about which model that resolves to. |
 | `effort` | enum | No | Effort level override. Values: `low`, `medium`, `high`, `xhigh`, `max`. Available levels depend on the model. |
 | `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. Uses the same format as path-specific rules. Skills in nested `.claude/skills/` directories and `--add-dir` directories are automatically discovered. |
 | `shell` | enum | No | Shell for dynamic context injection commands. Values: `bash` (default), `powershell`. Requires `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` for PowerShell. |
@@ -52,6 +52,7 @@ Key takeaways:
 - Use `disable-model-invocation: true` for rarely-used skills to save context budget.
 - Use `user-invocable: false` for internal/helper skills that Claude should call autonomously but users should not see in the menu.
 - `disable-model-invocation: true` also blocks scheduled-task invocation (v2.1.196+) — a cron/scheduled skill must leave it unset and rely on a narrow `description` plus `disallowed-tools` instead.
+- **Stacked invocation (v2.1.199+):** `/skill-a /skill-b do XYZ` loads the first skill plus up to five more stacked after it (six total), passing the trailing text as `$ARGUMENTS` to each. Expansion stops at the first token that isn't an inline user-invocable skill — a `context: fork` skill or one whose arguments may themselves start with a slash (e.g. `/loop`) ends the run there. Before v2.1.199 only the first skill loaded.
 
 ---
 
@@ -71,6 +72,8 @@ Available variables inside SKILL.md content (below the frontmatter):
 | `${CLAUDE_PROJECT_DIR}` | The project root directory — the same path hooks and MCP servers receive as `CLAUDE_PROJECT_DIR`. Applies to both the skill body and `allowed-tools` (e.g. `Bash(${CLAUDE_PROJECT_DIR}/scripts/lint.sh *)`). Use it to reference project-local scripts independent of where the skill is installed. (v2.1.196+) |
 
 If `$ARGUMENTS` is **not** referenced anywhere in the skill content, arguments are automatically appended as `ARGUMENTS: <value>` at the end.
+
+Unmatched positional placeholders (`$1`/`$2` with no corresponding argument) are preserved verbatim in the content as of v2.1.210 — before that they were silently stripped. Don't rely on stripping to hide optional-argument scaffolding; guard optional arguments in prose instead.
 
 ### Example
 
@@ -247,7 +250,7 @@ Skill descriptions consume approximately **~1% of the context window** (fallback
 - If too many skills exceed the character budget, some may be excluded from context. Run `/context` to check which skills are loaded.
 ### Override the budget
 
-- `skillListingBudgetFraction` in settings.json (v2.1.105+, default ~0.01). **Note:** calculates against ~200K baseline, not the model's actual context window.
+- `skillListingBudgetFraction` in settings.json (v2.1.105+, default ~0.01). **Note:** calculates against ~200K baseline, not the model's actual context window — on 1M-context models raise proportionally (e.g. 0.05). Track issue #57941.
 - `maxSkillDescriptionChars` — per-skill character cap (v2.1.105+).
 - `SLASH_COMMAND_TOOL_CHAR_BUDGET` — env var, fixed character count.
 - Run `/doctor` to diagnose overflow and see which skills are affected.
@@ -268,6 +271,8 @@ Skill descriptions consume approximately **~1% of the context window** (fallback
 Plugin skills use the `plugin-name:skill-name` namespace to avoid naming conflicts. For example, a skill `deploy` in plugin `my-tools` is invoked as `/my-tools:deploy`.
 
 Skills load from `.claude/skills/` in the starting directory AND every parent directory up to the repo root. Nested `.claude/skills/` directories discovered on demand. `--add-dir` directories have their `.claude/skills/` loaded automatically.
+
+**Directory-qualified names (nested skills):** when a nested skill's name clashes with a project-root one, the nested skill appears under a directory-qualified name (`apps/web:deploy`) and both stay available; type the qualified name to run the nested variant explicitly. As of v2.1.203, invoking the *unqualified* name loads the project-root skill and appends a list of the directory-qualified variants, instructing Claude to also invoke any variant whose directory holds the files being worked on — so a nested skill still applies to work in its directory.
 
 ### Permission rules
 
@@ -298,6 +303,8 @@ Control skill visibility from `settings.json` without editing SKILL.md. The `/sk
 ```
 
 **Caveat (v2.1.129+):** As of May 2026, skillOverrides only takes effect from managed/policy settings. User and project settings overrides do not yet propagate. Track issue #50631.
+
+As of v2.1.199, `"off"` also hides the skill from the command lists advertised to **Remote Control** clients and **Agent SDK** callers, not only the terminal `/` menu; invoking a hidden skill by full name returns the skillOverrides error instead of running it.
 
 Plugin skills are not affected; manage those through `/plugin`.
 
