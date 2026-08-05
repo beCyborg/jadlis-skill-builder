@@ -1,5 +1,7 @@
 # Agent Authoring Guide
 
+> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
+
 When a skill creates or works with companion subagents.
 
 ## Skill vs Agent frontmatter
@@ -12,9 +14,11 @@ Fields like `name`, `description`, `when_to_use`, `arguments`, `allowed-tools`, 
 ### Agent `.md` frontmatter (`.claude/agents/`)
 Fields: `name`, `description`, `prompt`, `tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `skills`, `mcpServers`, `hooks`, `memory`, `background`, `effort`, `isolation`, `color`, `initialPrompt`. (See the canonical [sub-agents docs](https://code.claude.com/docs/en/sub-agents) for the complete table.) For agents the `model` field defaults to `inherit`. `prompt` sets the system prompt and is equivalent to the markdown body — it exists mainly for the JSON `--agents` flag; in `.md` files write the body instead.
 
+**Naming (v2.1.218+):** agent names use lowercase letters and hyphens and **cannot contain `:`** — the colon is reserved for plugin-scoped identifiers (`my-plugin:reviewer`). Claude Code doesn't load a file whose agent name contains one and logs the error only to the debug log, so a bad name fails silently from the user's point of view. Also note the Task tool's `mode` parameter is deprecated and ignored as of v2.1.212 — subagents inherit the parent session's permission mode by default; use `permissionMode` in the agent definition instead.
+
 Two model-inheritance facts worth knowing when pinning workers:
-- The built-in **Explore** agent inherits the main session's model, capped at opus (it no longer runs on haiku) — v2.1.198+.
-- `isolation: worktree` is git-hardened: worktree subagents are prevented from running shell/git-mutating commands against the main checkout instead of their own worktree (fixes landed in v2.1.203 and v2.1.210). Still treat worktree isolation as protection against *accidents*, not a security boundary.
+- The built-in **Explore** agent inherits the main session's model (v2.1.198+; it no longer runs on Haiku), capped at Opus on the Claude API — with today's default session model that means Explore runs on the session's Opus/Sonnet tier, never above it. On other providers (Bedrock, Vertex, Foundry) it inherits directly with no cap. A user/project agent named `Explore` overrides the built-in and keeps its own `model` field — define one with `model: haiku` to pin exploration to a cheaper model.
+- `isolation: worktree` is git-hardened: worktree subagents are prevented from running shell/git-mutating commands against the main checkout instead of their own worktree (fixes landed in v2.1.203, v2.1.210, and v2.1.222 — the latter extends isolation of file edits and Bash to every session type). Still treat worktree isolation as protection against *accidents*, not a security boundary.
 
 The `memory` field enables persistent memory for agents. Scopes:
 - `user` — stored in `~/.claude/agent-memory/<agent-name>/`, available across all projects

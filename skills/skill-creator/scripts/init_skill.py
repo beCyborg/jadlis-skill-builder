@@ -18,7 +18,7 @@ from pathlib import Path
 SKILL_TEMPLATE = """---
 name: {skill_name}
 description: "TODO replace — one line stating what this skill does AND when to use it. Lead with the trigger condition (specific scenarios, file types, or tasks). Third person, single line, no angle brackets."
-# when_to_use: [optional: Additional context for when to invoke this skill — trigger phrases, example requests. Combined with description, truncated at 1,536 chars.]
+# when_to_use: [optional: Additional context for when to invoke this skill — trigger phrases, example requests. Combined with description, truncated at 1,536 chars (canon: references/frontmatter-reference.md section 1).]
 # argument-hint: [optional, e.g. "[file-path]"]
 # arguments: [optional: named positional arguments for $name substitution, e.g. "issue branch" or ["issue", "branch"]]
 # allowed-tools: [optional, e.g. "Bash Read Write" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)"]
@@ -27,8 +27,9 @@ description: "TODO replace — one line stating what this skill does AND when to
 # effort: [optional: low/medium/high/xhigh/max (available levels depend on the model)]
 # paths: [optional: glob patterns limiting activation, e.g. "*.py, src/**"]
 # shell: [optional: bash (default) or powershell]
-# context: [optional: fork - runs in a forked subagent context]
+# context: [optional: fork - runs in a forked subagent context; background by default since v2.1.218]
 # agent: [optional: subagent type when context: fork, e.g. Explore, Plan, general-purpose]
+# background: [optional, only with context: fork: false to wait for the fork's result in the invoking turn (full tool set, /rewind coverage); default true]
 # disable-model-invocation: [optional: true to prevent Claude from auto-loading this skill]
 # user-invocable: [optional: false to hide from slash command menu, for background knowledge only]
 # hooks: [optional: hooks scoped to this skill's lifecycle]

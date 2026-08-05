@@ -1,6 +1,10 @@
 # Environment Notes: Claude.ai and Cowork
 
+> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
+
 The core loop (draft → test → review → improve) is the same everywhere; only the mechanics change.
+
+**File delivery gate (both environments):** before pointing the user at a file path, check whether a file-presentation tool is available in the session (e.g. `present_files` / a send-file tool). In Claude.ai and Cowork the user cannot browse the local filesystem — a bare path like `/tmp/my-skill.skill` is unreachable for them. If the tool exists, deliver outputs (packaged `.skill` files, eval viewer HTML, reports) through it; if not, fall back to showing the content inline or telling the user where to download it.
 
 ## Claude.ai (no subagents)
 
