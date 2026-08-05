@@ -32,7 +32,9 @@ The validator infers the type from the filename when possible.
 
 ## SKILL.md Frontmatter
 
-Defines the frontmatter structure for skill files.
+Defines the frontmatter structure for skill files. Numeric limits and version
+gates here mirror `references/frontmatter-reference.md` §1 (the canon) — update
+both together.
 
 ```yaml
 ---
@@ -56,8 +58,10 @@ model: string             # model override; accepts /model values or "inherit"; 
 effort: enum              # low | medium | high | xhigh | max (available levels depend on the model)
 context: enum             # fork (runs in subagent context)
 agent: string             # subagent type when context: fork (Explore, Plan, general-purpose, or a custom agent)
+background: boolean       # only with context: fork; default true (fork runs in background). false = wait for the result in the invoking turn. (v2.1.218+)
 paths: string | list      # glob patterns limiting activation (e.g., "*.py, src/**")
 shell: enum               # bash (default) | powershell
+# boolean fields accept yes/no/on/off/1/0 in any case, besides true/false (v2.1.218+)
 
 # Optional - Lifecycle
 hooks: object             # hooks scoped to skill lifecycle (PreToolUse, PostToolUse, etc.)
@@ -72,7 +76,7 @@ fallback: string          # fallback behavior hint (Agent Skills standard)
 ---
 ```
 
-Only `description` is recommended; everything else (including `name`) is optional. `compatibility` is a legacy field some older skills carry — the validator tolerates it with a warning, but it is not a current Claude Code field.
+`description` is the one field to treat as required — `quick_validate` fails without it. Everything else (including `name`) is optional: a missing `name` only warns (the skill falls back to the directory name; convention is `name` == directory basename). `compatibility` is a legacy field some older skills carry — the validator tolerates it with a deprecation warning, but it is not a current Claude Code field.
 
 See `references/frontmatter-reference.md` for detailed field documentation, invocation control matrix, and examples.
 

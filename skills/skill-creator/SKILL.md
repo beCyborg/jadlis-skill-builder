@@ -139,11 +139,11 @@ This creates:
 
 Based on interview, fill in the required fields and relevant optional fields:
 
-- **name**: Display label (kebab-case, max 64 chars). The command you type comes from the **directory name**, not this field (except a plugin-root `SKILL.md`) — so keep `name` == directory basename. Every skill is also a slash command (`/<name>`, or `/<plugin>:<name>`) and appears in the `/` menu unless `user-invocable: false`. Check `/skills` for collisions and avoid bundled-skill and built-in command names (`run`, `verify`, `run-skill-generator`, `loop`, `batch`, `simplify`, `code-review`, `debug`, `doctor`, `dataviz`, `design-sync`, `claude-api`, `fewer-permission-prompts`, `update-config`, `deep-research`, `init`, `review`, `security-review`, `schedule`).
+- **name**: Display label (kebab-case, max 64 chars). The command you type comes from the **directory name**, not this field — so keep `name` == directory basename. (Exceptions: in a plugin skill, `name` replaces the command's *last segment*, the plugin prefix stays, v2.1.216+; in a plugin-root `SKILL.md`, `name` supplies the final segment.) Every skill is also a slash command (`/<name>`, or `/<plugin>:<name>`) and appears in the `/` menu unless `user-invocable: false`. Check `/skills` for collisions and avoid reserved and built-in command names — the canonical list lives in `references/description-optimization.md` §"Naming the skill".
 - **description**: What the skill does — this is the primary triggering mechanism. Front-load key use cases: the combined `description` + `when_to_use` text is truncated at **1,536 characters** in the skill listing. Include both what the skill does AND specific contexts for when to use it. Claude tends to "undertrigger" skills — make descriptions a little "pushy" (e.g., "Build dashboards for internal data. Use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'")
 - **when_to_use** *(optional)*: Additional trigger context — phrases, example requests. Appended to `description` in the skill listing and counts toward the 1,536-char cap. Use `description` for WHAT it does and `when_to_use` for WHEN to invoke it.
 
-**Optional fields**: invocation control (`when_to_use`, `arguments`, `argument-hint`, `disable-model-invocation`, `user-invocable`), execution (`allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`/`agent`, `paths`, `shell`), lifecycle (`hooks`). Full field table, semantics, and version notes: `references/frontmatter-reference.md` §1; quick schema: `references/schemas.md`.
+**Optional fields**: invocation control (`when_to_use`, `arguments`, `argument-hint`, `disable-model-invocation`, `user-invocable`), execution (`allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`/`agent`/`background`, `paths`, `shell`), lifecycle (`hooks`). Full field table, semantics, and version notes: `references/frontmatter-reference.md` §1; quick schema: `references/schemas.md`.
 
 **Invocation control**: By default, both user and Claude can invoke a skill. Set `disable-model-invocation: true` for user-only skills (e.g., dangerous operations; also blocks preload into subagents and scheduled-task runs). Set `user-invocable: false` for Claude-only background knowledge skills that shouldn't appear in the `/` menu. Matrix and takeaways: `references/frontmatter-reference.md` §2.
 
@@ -168,40 +168,9 @@ skill-name/
     └── assets/     - Files used in output (templates, icons, fonts)
 ```
 
-**What NOT to include**: README.md, INSTALLATION_GUIDE.md, CHANGELOG.md, or any auxiliary documentation. Skills are for AI agents, not human onboarding.
+#### Writing the body
 
-#### Progressive Disclosure
-
-Skills use a three-level loading system:
-1. **Metadata** (name + description) - Always in context (~100 words)
-2. **SKILL.md body** - In context whenever skill triggers (<500 lines ideal)
-3. **Bundled resources** - As needed (unlimited, scripts can execute without loading)
-
-These word counts are approximate and you can feel free to go longer if needed.
-
-**Key patterns:**
-- Keep SKILL.md under 500 lines; if you're approaching this limit, add an additional layer of hierarchy along with clear pointers about where the model using the skill should go next to follow up.
-- Reference files clearly from SKILL.md with guidance on when to read them
-- For large reference files (>300 lines), include a table of contents
-
-**Domain organization**: When a skill supports multiple domains/frameworks, organize by variant:
-```
-cloud-deploy/
-├── SKILL.md (workflow + selection)
-└── references/
-    ├── aws.md
-    ├── gcp.md
-    └── azure.md
-```
-Claude reads only the relevant reference file.
-
-#### Principle of Lack of Surprise
-
-This goes without saying, but skills must not contain malware, exploit code, or any content that could compromise system security. A skill's contents should not surprise the user in their intent if described. Don't go along with requests to create misleading skills or skills designed to facilitate unauthorized access, data exfiltration, or other malicious activities. Things like a "roleplay as an XYZ" are OK though.
-
-#### Writing Patterns and Style
-
-See `references/skill-writing-craft.md` for body-writing craft: imperative form, output-format and example patterns, affirmative directives, placing rules where they fire, trimming what the model already knows, and reaching for a hook instead of prose for must-happen steps.
+Read `references/skill-writing-craft.md` when drafting or rewriting SKILL.md content. It carries: what NOT to include (no README/CHANGELOG — skills are for agents), progressive disclosure (three-level loading, the <500-line rule, domain organization by variant), the Principle of Lack of Surprise (no malware/misleading skills), and body-writing craft — imperative form, output-format and example patterns, affirmative directives, placing rules where they fire, trimming what the model already knows, and reaching for a hook instead of prose for must-happen steps.
 
 ### Immediate Feedback Loop
 
@@ -252,7 +221,7 @@ Once gradable criteria are defined (expectations, success metrics), Claude can:
 
 ### Choosing an Orchestration Architecture
 
-When the skill being created involves more than single-pass inline work — fan-out over many items, background or scheduled runs, parallel file mutation — pick the execution architecture during the interview, before drafting. Seven options: plain inline, forked subagent (`context: fork`), direct subagents (hub-and-spoke), thin skill + saved workflow, agent teams (experimental, env-gated), hooks as a cross-cutting enforcement layer, and scheduled/cron. The constraint that eliminates options fastest: workflows and cron runs accept **no mid-run user input** — anything interactive must happen before the fan-out launches or after it returns.
+When the skill being created involves more than single-pass inline work — fan-out over many items, background or scheduled runs, parallel file mutation — pick the execution architecture during the interview, before drafting. Seven options: plain inline, forked subagent (`context: fork` — runs in the **background by default** since v2.1.218, with a narrower tool set and no `/rewind` coverage; `background: false` restores foreground semantics), direct subagents (hub-and-spoke), thin skill + saved workflow, agent teams (experimental, env-gated), hooks as a cross-cutting enforcement layer, and scheduled/cron. The constraint that eliminates options fastest: workflows and cron runs accept **no mid-run user input** — anything interactive must happen before the fan-out launches or after it returns.
 
 See `references/orchestration-guide.md` for frontmatter signatures, the decision matrix, resolution order, and worked examples.
 
@@ -261,7 +230,7 @@ See `references/orchestration-guide.md` for frontmatter signatures, the decision
 After creating or improving a skill, package it:
 
 ```bash
-scripts/package_skill.py <path/to/skill-folder>
+python -m scripts.package_skill <path/to/skill-folder>
 ```
 
 Direct the user to the resulting `.skill` file path so they can install it. This is the quick, single-recipient path. For skills that need to be **shared, versioned, or published**, wrap them in a plugin + marketplace instead — see `references/plugin-packaging.md` (layout, `plugin.json`/`marketplace.json`, version-bump rules, `claude plugin validate --strict`).
@@ -319,11 +288,11 @@ When invoked, skill content stays in the conversation for the session. On compac
 
 ### Context Budget
 
-Skill descriptions consume ~1% of the context window; combined `description` + `when_to_use` is truncated at 1,536 characters — front-load key use cases. Keep SKILL.md under 500 lines. Budget overrides (`skillListingBudgetFraction`, `maxSkillDescriptionChars`, `SLASH_COMMAND_TOOL_CHAR_BUDGET`) and diagnostics (`/context`, `/doctor`): `references/frontmatter-reference.md` §7.
+The skill listing is budgeted at a fraction of the model's context window (default 1%); combined `description` + `when_to_use` is truncated at 1,536 characters per skill — front-load key use cases. Keep SKILL.md under 500 lines. Budget overrides (`skillListingBudgetFraction`, `skillListingMaxDescChars`, `SLASH_COMMAND_TOOL_CHAR_BUDGET`) and diagnostics (`/context`, `/doctor`): `references/frontmatter-reference.md` §7.
 
 ### Validation
 
-Run `claude plugin validate` as the primary validator for frontmatter and plugin structure. Use `scripts/quick_validate.py` for lightweight local smoke checks.
+Run `claude plugin validate` as the primary validator for frontmatter and plugin structure — it is the canon. `python -m scripts.quick_validate` is a lightweight authoring guardrail: it *fails* only on hard errors (missing `description`, malformed YAML, over-limit lengths) and *warns* on everything else, including unknown keys — a warning is a prompt to double-check the docs, not a blocker.
 
 ---
 
@@ -436,7 +405,9 @@ The references/ directory has additional documentation:
 - `references/creation-interview.md` — Adaptive Create interview: triage gate, simple/staged paths, orchestration fork, "just vibe" degradation
 - `references/research-protocol.md` — Two-tier research: local docs mirror always, web/library research on request
 - `references/house-style.md` — Machine-local conventions; read in full at the start of every Create run when present
-- `references/skill-writing-craft.md` — Body-writing patterns and style craft
+- `references/skill-writing-craft.md` — What not to include, progressive disclosure, lack-of-surprise principle, body-writing patterns and style craft
+- `references/sandboxing.md` — Sandbox settings that affect skills running bash (network allowlist, credential masking, filesystem isolation)
+- `references/AUDIT.md` — Audit registry: per-file audit dates, SYNC registry of facts duplicated across files, release checklist
 - `references/integration-testing.md` — TESTS.md capability matrix + gate for skills with live external dependencies
 - `references/plugin-packaging.md` — Distributing a skill as a plugin: layout, plugin.json/marketplace.json, version semantics, validation
 - `references/skill-lifecycle.md` — Skill content lifecycle, compaction behavior, re-invocation

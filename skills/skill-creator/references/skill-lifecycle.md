@@ -1,5 +1,7 @@
 # Skill Content Lifecycle
 
+> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
+
 How skill content behaves across a Claude Code session.
 
 ## Loading
@@ -33,6 +35,7 @@ Claude Code watches the already-active skill directories — `~/.claude/skills/`
 - Already-loaded skill content in the current conversation is not updated — re-invoke needed (see Re-invocation above)
 - Creating a **top-level** skills directory that did not exist when the session started is the one case the watcher can't pick up — run `/reload-skills` to re-scan without restarting, or restart if needed
 - `/reload-skills` (v2.1.152+) re-scans all skill directories on demand; a `SessionStart` hook can return `reloadSkills: true` to surface skills it just installed in the same session
+- Skills and commands changed during a session appear in the `/` slash menu without a restart as of v2.1.216 (before that, the menu showed the stale list until restart)
 
 ## Best practices for long skills
 

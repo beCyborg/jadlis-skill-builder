@@ -13,7 +13,9 @@ Some advice on writing style when improving a skill:
 
 2. Keep the prompt lean; remove things that aren't pulling their weight. Make sure to read the transcripts, not just the final outputs -- if it looks like the skill is making the model waste a bunch of time doing things that are unproductive, you can try getting rid of the parts of the skill that are making it do that and seeing what happens.
 
-3. Last but not least, try hard to explain the **why** behind everything you're asking the model to do. Today's LLMs are *smart*. They have good theory of mind and when given a good harness and go beyond rote instructions and really make things happen. Even if the feedback from the user is terse or frustrated, try to actually understand the task and why the user is writing what they wrote, and what they actually wrote, and then try to transmit this understanding into the instructions. If you find yourself writing ALWAYS or NEVER in all caps, or using super rigid structures, that's a yellow flag - try to reframe and explain the reasoning so that the model understands why the thing you're asking for is important. That's a more humane, powerful, and effective approach.
+3. Watch for **repeated work across test cases**: if the transcripts show the model re-deriving the same intermediate result or re-writing the same boilerplate on every run, bundle that work into a script under the skill's `scripts/` directory and have the skill call it. Deterministic, repeated steps belong in code; the model's turns should go to the parts that actually vary per task.
+
+4. Last but not least, try hard to explain the **why** behind everything you're asking the model to do. Today's LLMs are *smart*. They have good theory of mind and when given a good harness and go beyond rote instructions and really make things happen. Even if the feedback from the user is terse or frustrated, try to actually understand the task and why the user is writing what they wrote, and what they actually wrote, and then try to transmit this understanding into the instructions. If you find yourself writing ALWAYS or NEVER in all caps, or using super rigid structures, that's a yellow flag - try to reframe and explain the reasoning so that the model understands why the thing you're asking for is important. That's a more humane, powerful, and effective approach.
 
 This task is pretty important (we are trying to create billions a year in economic value here!) and your thinking time is not the blocker; take your time and really mull things over. I'd suggest writing a draft skill and then looking at it anew and making improvements. Really try to get into the head of the user and understand what they want and need. Best of luck.
 
@@ -226,7 +228,7 @@ cp -r workspace/<best_version>/skill/* ./
 
 Package and present the improved skill:
 ```bash
-scripts/package_skill.py <path/to/skill-folder>
+python -m scripts.package_skill <path/to/skill-folder>
 ```
 Direct the user to the resulting `.skill` file path.
 

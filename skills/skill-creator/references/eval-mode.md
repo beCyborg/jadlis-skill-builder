@@ -65,6 +65,8 @@ Before running evals, scan the skill for dependencies:
 2. Check referenced scripts for required tools
 3. Present to user and confirm availability
 
+**Do NOT use `/skill-test` or any other testing skill to run the evals.** Follow this skill's own procedure (executor → grader) directly. An external testing harness bypasses the executor/grader separation this workflow depends on — the same context ends up producing and judging the output, which contaminates the results.
+
 ## Step 2: Prepare and Create Task
 
 Run the prepare script for each configuration and create a task. Run directories follow the nested layout from `references/workspace-structure.md` (`eval-<id>/<config>/`) — the same layout `aggregate_benchmark.py` reads:

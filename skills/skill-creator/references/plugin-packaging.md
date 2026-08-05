@@ -1,6 +1,8 @@
 # Distributing a Skill as a Plugin
 
-`scripts/package_skill.py` produces a `.skill` file — the quick path for handing one skill to one person. For anything that needs to be **shared with teammates, versioned, updated over time, or published**, wrap the skill in a **plugin** inside a **marketplace**. (This skill-creator ships exactly that way.)
+> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
+
+`python -m scripts.package_skill` produces a `.skill` file — the quick path for handing one skill to one person. For anything that needs to be **shared with teammates, versioned, updated over time, or published**, wrap the skill in a **plugin** inside a **marketplace**. (This skill-creator ships exactly that way.)
 
 ## Standalone vs plugin — which to use
 
@@ -26,9 +28,9 @@ my-plugin/
 └── hooks/                   # optional
 ```
 
-A plugin with a **root-level `SKILL.md`** and no `skills/` subdir is auto-loaded as a single-skill plugin (v2.1.142+); there, the frontmatter `name` sets the command. Plugin skills are namespaced `plugin-name:skill-name`, so `/my-plugin:my-skill` cannot collide with other levels.
+A plugin with a **root-level `SKILL.md`** and no `skills/` subdir is auto-loaded as a single-skill plugin (v2.1.142+); there, the frontmatter `name` supplies the whole final command segment (fallback: plugin directory name). For skills in the `skills/` subdir, `name` replaces only the **last segment** of the command — the plugin prefix stays (v2.1.216+; before that, `name` replaced the whole command and `/my-plugin:fancy` didn't autocomplete). Plugin skills are namespaced `plugin-name:skill-name`, so `/my-plugin:my-skill` cannot collide with other levels.
 
-> **Don't set component keys in `plugin.json` unless you mean to override defaults.** Declaring `"skills": [...]` *shadows* the default `skills/` directory; if you must list it, point at a **directory**, not a file (`claude plugin validate` flags file paths). Omit `commands`/`agents`/`skills`/`hooks` to use the default folders.
+> **Don't set component keys in `plugin.json` unless you mean to override defaults.** Declaring `"skills": [...]` *shadows* the default `skills/` directory; if you must list it, point at a **directory**, not a file (`claude plugin validate` flags file paths). As of v2.1.221, `"."` is accepted as a `skills` path (the plugin root), and the root-level `SKILL.md` validation error suggests it. Omit `commands`/`agents`/`skills`/`hooks` to use the default folders.
 
 ## plugin.json (minimal)
 
@@ -76,8 +78,9 @@ claude plugin validate <path>     # primary validator
 - Pointed at a **marketplace directory**, it checks `marketplace.json` only.
 - Pointed at a **plugin directory**, it checks `plugin.json` plus the skill/agent/command/hook frontmatter and `hooks/hooks.json`.
 - Add `--strict` in CI to turn unrecognized-field warnings into errors before you publish.
+- As of v2.1.221, validation also warns when a marketplace or plugin name would be rejected by Claude Desktop's managed marketplace sync — heed these if the plugin may ever be distributed through managed settings.
 
-Use `scripts/quick_validate.py <skill-dir>` for a fast local SKILL.md smoke check during authoring.
+Use `python -m scripts.quick_validate <skill-dir>` for a fast local SKILL.md smoke check during authoring.
 
 ## Distribution notes
 

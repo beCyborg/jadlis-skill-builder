@@ -1,6 +1,6 @@
 # SKILL.md Frontmatter Reference
 
-> Last audited against Claude Code docs: 2026-07-16 (v2.1.211)
+> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
 
 Complete reference for all frontmatter fields available in Claude Code SKILL.md files.
 
@@ -22,19 +22,22 @@ Claude Code skills follow the [Agent Skills](https://agentskills.io) open standa
 | `model` | string | No | Model override for this skill. Accepts the same values as `/model`, or `inherit` to keep the active model. The override is **turn-scoped**: it applies for the rest of the current turn and is not saved — the session model resumes on your next prompt. A value excluded by an org `availableModels` allowlist is ignored. The session default is the recommended model for the account type (an org default set by an admin overrides it) — don't hardcode assumptions about which model that resolves to. |
 | `effort` | enum | No | Effort level override. Values: `low`, `medium`, `high`, `xhigh`, `max`. Available levels depend on the model. |
 | `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. Uses the same format as path-specific rules. Skills in nested `.claude/skills/` directories and `--add-dir` directories are automatically discovered. |
-| `shell` | enum | No | Shell for dynamic context injection commands. Values: `bash` (default), `powershell`. Requires `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` for PowerShell. |
-| `context` | enum | No | Execution context. Set to `fork` to run the skill in a forked subagent context instead of the main conversation. |
+| `shell` | enum | No | Shell for dynamic context injection commands. Values: `bash` (default), `powershell`. `powershell` runs inline commands via the PowerShell tool — on by default on Windows without Git Bash; elsewhere it requires `CLAUDE_CODE_USE_POWERSHELL_TOOL=1`. |
+| `context` | enum | No | Execution context. Set to `fork` to run the skill in a forked subagent context instead of the main conversation. As of v2.1.218 the fork runs in the **background by default** — see the `background` field and the consequences listed in §5. |
 | `agent` | string | No | Which subagent type to use when `context: fork`. Options: `Explore`, `Plan`, `general-purpose`, or a custom agent name. |
+| `background` | boolean | No (default: `true`) | Only applies with `context: fork`. Set to `false` to wait for the forked subagent's result in the turn that invoked the skill, instead of running it in the background. (v2.1.218+; before that, forked skills always ran in the foreground.) |
 | `hooks` | object | No | Hooks scoped to this skill's lifecycle. Only active while the skill runs. See section 6. |
-| `disable-model-invocation` | boolean | No (default: `false`) | When `true`, prevents Claude from auto-loading this skill. It will not appear in Claude's context and can only be invoked manually by the user via `/skill-name`. It also cannot be preloaded into a subagent via the agent's `skills:` field (Claude Code skips it with a warning). As of v2.1.196 it **also blocks the skill from running when a scheduled task fires** with the skill as its prompt — do not set it on skills meant to run from cron/scheduled tasks. |
+| `disable-model-invocation` | boolean | No (default: `false`) | When `true`, prevents Claude from auto-loading this skill. It will not appear in Claude's context and can only be invoked manually by the user via `/skill-name`. It also cannot be preloaded into a subagent via the agent's `skills:` field (Claude Code skips it with a warning). As of v2.1.196 it **also blocks the skill from running when a scheduled task fires** with the skill as its prompt — do not set it on skills meant to run from cron/scheduled tasks. As of v2.1.222, when Claude tries to invoke such a skill, the refusal tells it to ask the user to run the skill instead of replicating its workflow. |
 | `user-invocable` | boolean | No (default: `true`) | When `false`, hides the skill from the `/` menu. Only Claude can invoke it programmatically. |
 | `license` | string | No | License identifier (e.g. `MIT`, `Apache-2.0`). From Agent Skills standard; not in Claude Code docs. |
 | `metadata` | object | No | Custom key-value pairs for your own use. From Agent Skills standard; not in Claude Code docs. |
-| `display-name` | string | No | Human-friendly display name (Agent Skills standard). |
-| `default-enabled` | boolean | No | Whether the skill starts enabled (Agent Skills standard). |
-| `fallback` | string | No | Fallback behavior hint (Agent Skills standard). |
+| `display-name` | string | No | Human-friendly display name. From Agent Skills standard; not in Claude Code docs. |
+| `default-enabled` | boolean | No | Whether the skill starts enabled. From Agent Skills standard; not in Claude Code docs. |
+| `fallback` | string | No | Fallback behavior hint. From Agent Skills standard; not in Claude Code docs. |
 
 **Key casing (v2.1.186+):** the `display-name`, `default-enabled`, `fallback`, and `metadata.*` keys are accepted in kebab-case, snake_case, or camelCase (`display-name` / `display_name` / `displayName`). Prefer kebab-case for consistency with the rest of the frontmatter. Malformed YAML frontmatter no longer fails silently — Claude Code loads the skill body with empty metadata instead (v2.1.186+).
+
+**Boolean literals (v2.1.218+):** boolean fields accept `yes`, `no`, `on`, `off`, `1`, and `0` in any letter case, in addition to `true` and `false`. Before v2.1.218 only `true`/`false` were recognized.
 
 ---
 
@@ -52,7 +55,7 @@ Key takeaways:
 - Use `disable-model-invocation: true` for rarely-used skills to save context budget.
 - Use `user-invocable: false` for internal/helper skills that Claude should call autonomously but users should not see in the menu.
 - `disable-model-invocation: true` also blocks scheduled-task invocation (v2.1.196+) — a cron/scheduled skill must leave it unset and rely on a narrow `description` plus `disallowed-tools` instead.
-- **Stacked invocation (v2.1.199+):** `/skill-a /skill-b do XYZ` loads the first skill plus up to five more stacked after it (six total), passing the trailing text as `$ARGUMENTS` to each. Expansion stops at the first token that isn't an inline user-invocable skill — a `context: fork` skill or one whose arguments may themselves start with a slash (e.g. `/loop`) ends the run there. Before v2.1.199 only the first skill loaded.
+- **Stacked invocation (v2.1.199+):** `/skill-a /skill-b do XYZ` loads the first skill plus up to five more stacked after it (six total), passing the trailing text as `$ARGUMENTS` to each. Expansion stops at the first token that isn't an inline user-invocable skill — a `context: fork` skill or one whose arguments may themselves start with a slash (e.g. `/loop`) ends the run there. Note: `/code-review` runs as a forked subagent from v2.1.218, so it too ends the run (before that it ran inline and stacked). Before v2.1.199 only the first skill loaded.
 
 ---
 
@@ -63,6 +66,7 @@ Available variables inside SKILL.md content (below the frontmatter):
 | Variable | Description |
 |---|---|
 | `$ARGUMENTS` | All arguments passed when invoking the skill, as a single string. |
+| `\$` | Escapes a literal `$` before a digit, `ARGUMENTS`, or a declared argument name (e.g. `\$1.00` in prose). A backslash before any other `$` is left unchanged; a doubled backslash (`\\$1`) keeps both backslashes and `$1` still expands. |
 | `$ARGUMENTS[N]` | Specific argument by 0-based index. |
 | `$N` | Shorthand for `$ARGUMENTS[N]`. E.g. `$0` is the first argument, `$1` is the second. |
 | `$name` | Named argument declared in the `arguments` frontmatter list. Names map to positions in order, so with `arguments: [issue, branch]` the placeholder `$issue` expands to the first argument and `$branch` to the second. |
@@ -147,7 +151,15 @@ Include the word **"ultrathink"** anywhere in your skill content to enable exten
 
 ### Skill as subagent (`context: fork`)
 
-Run a skill in an isolated subagent context. The skill executes in a fork and returns results to the main conversation.
+Run a skill in an isolated subagent context. The skill executes in a fork and returns results to the main conversation. It has no access to the conversation history.
+
+**Background by default (v2.1.218+).** The forked subagent runs in the background: the user keeps working and the result arrives when it completes. Consequences to design for:
+
+- A backgrounded fork runs with the **narrower tool set that applies to background subagents** — the skill's subagent is a regular agent type, so the exemption for subagents that fork the conversation doesn't cover it. If the skill's steps depend on a tool outside that set, set `background: false` to keep the full tool set.
+- Edits a background fork applies land **outside the session's checkpoints** — `/rewind` doesn't undo them; use git to revert. A foreground fork (`background: false`) edits the working tree during the invoking turn, so rewind restores its edits as usual.
+- Claude Code waits for the result anyway (as if `background: false`) in non-interactive mode (`-p` / Agent SDK), when `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`, when an earlier invocation of the same skill is still running, and when a scheduled task fires with the skill as its prompt.
+
+Before v2.1.218, forked skills always blocked the turn until they finished.
 
 ```yaml
 ---
@@ -184,7 +196,9 @@ Hooks can be defined directly in skill frontmatter. They are **scoped to the ski
 
 ### Supported hook events
 
-All standard Claude Code hook events are supported. This list is not exhaustive — see the [hooks docs](https://code.claude.com/docs/en/hooks) for the full set. Commonly used: `PreToolUse`, `PostToolUse`, `Notification`, `Stop`, `SubagentStart`, `SubagentStop`, `SessionStart`, `MessageDisplay` (transform/hide assistant message text as it's displayed, v2.1.152+), plus the agent-teams events `TaskCreated`, `TaskCompleted`, and `TeammateIdle` (used to gate quality — a hook exiting with code 2 blocks the action and feeds its message back). `SessionStart`/`Setup`/`SubagentStart` hooks must be **command-type** (prompt/agent hooks are rejected), and a `SessionStart` hook can return `reloadSkills: true` to make skills it installed available in the same session.
+All standard Claude Code hook events are supported. This list is not exhaustive — see the [hooks docs](https://code.claude.com/docs/en/hooks) for the full set. Commonly used: `PreToolUse`, `PostToolUse`, `Notification`, `Stop`, `SubagentStart`, `SubagentStop`, `SessionStart`, `MessageDisplay` (transform/hide assistant message text as it's displayed, v2.1.152+), `DirectoryAdded` (fires when a working directory is added mid-session via `/add-dir` or the SDK, v2.1.219+; non-blocking), plus the agent-teams events `TaskCreated`, `TaskCompleted`, and `TeammateIdle` (used to gate quality — a hook exiting with code 2 blocks the action and feeds its message back). `SessionStart`/`Setup`/`SubagentStart` hooks must be **command-type** (prompt/agent hooks are rejected), and a `SessionStart` hook can return `reloadSkills: true` to make skills it installed available in the same session.
+
+**Workspace trust (v2.1.218+):** frontmatter hooks in a *project subagent* run only after the user accepts the workspace-trust dialog for the folder the agent file came from. Before v2.1.218 these hooks could run from untrusted folders. Relevant when a skill ships companion agents with hooks.
 
 ### Hook types
 
@@ -241,17 +255,17 @@ hooks:
 
 ## 7. Context Budget
 
-Skill descriptions consume approximately **~1% of the context window** (fallback: 8,000 characters). The combined `description` + `when_to_use` text is **truncated at 1,536 characters** in the skill listing, so front-load key trigger words. Full skill content only loads when the skill is actually invoked.
+The skill listing Claude sees each turn is budgeted at a **fraction of the model's context window** (default 1%). The combined `description` + `when_to_use` text is **truncated at 1,536 characters** per skill in the listing (canon: §1 `description` row), so front-load key trigger words. Full skill content only loads when the skill is actually invoked.
 
 ### Best practices
 
 - Skills with `disable-model-invocation: true` have **zero context cost** until manually invoked by the user.
 - Keep SKILL.md under **500 lines**. Move reference material, examples, and large prompts to supporting files and reference them with `Read` or dynamic context injection.
-- If too many skills exceed the character budget, some may be excluded from context. Run `/context` to check which skills are loaded.
+- When the listing exceeds the budget, descriptions for the least-used skills are dropped and only their names are listed — Claude can still invoke them but can't see what they do. Run `/context` to check which skills are loaded.
 ### Override the budget
 
-- `skillListingBudgetFraction` in settings.json (v2.1.105+, default ~0.01). **Note:** calculates against ~200K baseline, not the model's actual context window — on 1M-context models raise proportionally (e.g. 0.05). Track issue #57941.
-- `maxSkillDescriptionChars` — per-skill character cap (v2.1.105+).
+- `skillListingBudgetFraction` in settings.json (v2.1.105+, default `0.01` = 1% of the model's context window). Raise to keep more descriptions visible at the cost of more context per turn.
+- `skillListingMaxDescChars` — per-skill character cap on combined `description` + `when_to_use` (default 1536).
 - `SLASH_COMMAND_TOOL_CHAR_BUDGET` — env var, fixed character count.
 - Run `/doctor` to diagnose overflow and see which skills are affected.
 
@@ -291,7 +305,7 @@ Syntax: `Skill(name)` for exact match, `Skill(name *)` for prefix match with any
 
 ### skillOverrides (settings-based visibility)
 
-Control skill visibility from `settings.json` without editing SKILL.md. The `/skills` menu writes it for you (highlight a skill, press Space to cycle states). Values: `"on"`, `"name-only"`, `"user-invocable-only"`, `"off"`.
+Control skill visibility from settings without editing SKILL.md (v2.1.129+). The `/skills` menu writes the overrides to `.claude/settings.local.json` for you (highlight a skill, press Space to cycle states). Values: `"on"`, `"name-only"`, `"user-invocable-only"`, `"off"`.
 
 ```json
 {
@@ -301,8 +315,6 @@ Control skill visibility from `settings.json` without editing SKILL.md. The `/sk
   }
 }
 ```
-
-**Caveat (v2.1.129+):** As of May 2026, skillOverrides only takes effect from managed/policy settings. User and project settings overrides do not yet propagate. Track issue #50631.
 
 As of v2.1.199, `"off"` also hides the skill from the command lists advertised to **Remote Control** clients and **Agent SDK** callers, not only the terminal `/` menu; invoking a hidden skill by full name returns the skillOverrides error instead of running it.
 

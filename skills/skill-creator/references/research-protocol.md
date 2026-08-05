@@ -5,21 +5,32 @@ Two tiers: local docs are always checked; external research is opt-in.
 ## Always: local Claude Code docs mirror
 
 Before writing frontmatter or choosing an orchestration architecture, verify
-against the local docs mirror at `~/.claude-code-docs/docs/` (if present —
-otherwise use the official docs at https://code.claude.com/docs):
+against the local docs mirror at `~/.claude-code-docs/docs/`.
+
+**Gate first — confirm the mirror exists and is fresh** before trusting it:
+
+```bash
+ls ~/.claude-code-docs/docs/skills.md && git -C ~/.claude-code-docs log -1 --format=%cs
+```
+
+If the mirror is missing, use the official docs at https://code.claude.com/docs
+instead. If the last sync is weeks old, treat version-gated claims as suspect and
+prefer `changelog.md` entries you can date.
 
 ```bash
 grep -rn "<feature keyword>" ~/.claude-code-docs/docs/skills.md \
   ~/.claude-code-docs/docs/sub-agents.md ~/.claude-code-docs/docs/workflows.md \
-  ~/.claude-code-docs/docs/agent-teams.md ~/.claude-code-docs/docs/hooks.md
+  ~/.claude-code-docs/docs/agent-teams.md ~/.claude-code-docs/docs/hooks.md \
+  ~/.claude-code-docs/docs/settings.md ~/.claude-code-docs/docs/checkpointing.md
 ```
 
 Key files: `skills.md` (frontmatter, substitutions, lifecycle), `sub-agents.md`,
-`agent-teams.md`, `workflows.md`, `hooks.md`, `plugins-reference.md`,
-`changelog.md` (feature version gates). This costs nothing and catches the most
-common failure: a skill built on a stale or misremembered feature. When the mirror
-and this skill's reference files disagree, the mirror wins — and note the
-discrepancy so the reference can be fixed.
+`agent-teams.md`, `workflows.md`, `hooks.md`, `settings.md` (settings keys that
+gate skill/workflow behavior), `checkpointing.md` (what `/rewind` can and cannot
+undo), `plugins-reference.md`, `changelog.md` (feature version gates). This costs
+nothing and catches the most common failure: a skill built on a stale or
+misremembered feature. When the mirror and this skill's reference files disagree,
+the mirror wins — and note the discrepancy so the reference can be fixed.
 
 ## On request: web and library research
 

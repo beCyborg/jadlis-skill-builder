@@ -1,6 +1,6 @@
 # Choosing an Orchestration Architecture
 
-> Last audited against Claude Code docs: 2026-07-16 (v2.1.211)
+> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
 
 When a new skill involves more than a single pass of inline work — fan-out over many
 items, background execution, scheduled runs, enforcement — the most consequential
@@ -28,9 +28,23 @@ agent: general-purpose   # or Explore, Plan, or a custom agent name
 The whole skill runs in one isolated subagent; only the result returns to the main
 conversation. One unit of work, no orchestration.
 
+As of v2.1.218 the fork runs in the **background by default**: the user keeps
+working and the result arrives when it completes. A backgrounded fork gets the
+narrower background-subagent tool set, and its edits land outside session
+checkpoints (`/rewind` can't undo them — git only). Set `background: false` when
+the skill needs the full tool set or checkpointed edits. Details:
+`references/frontmatter-reference.md` §5.
+
 Right when: a single heavy, self-contained task whose intermediate output would
 pollute the main context (a big scan, a long report). Not for fan-out — it is one
 fork, not many.
+
+**Disambiguation — three unrelated "forks":** `context: fork` (this architecture)
+runs a *skill* in a subagent. The `/fork` command starts a separate background
+*session* with its own worktree (v2.1.221+; it doesn't share the original
+checkout) and its own subagent budget. The in-session conversation fork is
+`/subtask` (named `/fork` before v2.1.212). Don't design a skill around one
+expecting the semantics of another.
 
 ### 3. Direct subagents (hub-and-spoke)
 
@@ -49,6 +63,21 @@ Design hub skills to process notifications as they arrive (and to persist anythi
 the notification carries that isn't stored elsewhere, e.g. token/duration metrics)
 rather than assuming synchronous returns.
 
+**Agent-tool limits** (these govern architecture 3; the Workflow tool in
+architecture 4 has its own, different caps):
+- **20 concurrent** subagents per session (v2.1.217+; ultracode sessions exempt) —
+  `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`. Excess spawns fail with an error telling
+  Claude not to retry; size fan-out waves accordingly.
+- **200 per session** total (v2.1.212+) — `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION`.
+  Nested subagents, forks, and background subagents all count; agents a workflow
+  script spawns with `agent()` do not.
+- **Depth 3** of nesting below the main conversation (default since v2.1.219; in
+  v2.1.217–218 the default was 1) — `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`.
+
+All three variables accept a positive whole number; the limits can be raised but
+not turned off. A skill that fans out near these numbers should batch its spawns
+and degrade gracefully when a spawn is refused.
+
 ### 4. Thin skill + saved Workflow
 
 The heavyweight fan-out pattern. The skill is a thin interactive shell; the
@@ -59,7 +88,8 @@ or `~/.claude/workflows/`, project wins on a name clash), conventionally named
 - **Phase A (skill, main session):** interview the user, do recon, compute
   parameters — everything requiring judgment or input.
 - **Phase B (workflow):** `Workflow({name: "<skill>-core", args: {...}})` runs the
-  deterministic fan-out — up to 16 concurrent agents, 1,000 per run, loops and
+  deterministic fan-out — up to 16 concurrent agents, 1,000 per run (Workflow-tool
+  limits, separate from the Agent-tool limits in architecture 3), loops and
   conditionals in plain JavaScript, `agent(prompt, {schema})` for validated
   structured output. Workflows run in the background; the skill waits for the
   `<task-notification>` and reads the script's return value. Big intermediate
@@ -73,9 +103,12 @@ accepts no mid-run user input** — only permission prompts can pause it. Anythi
 interactive must happen in Phase A or C.
 
 Environment knobs to be aware of when authoring workflow-backed skills:
-- **Size guideline** (v2.1.202+): the "Dynamic workflow size" setting in `/config`
-  (`workflowSizeGuideline`: small/medium/large) is sent to Claude as *advice* on
-  agent count — a prompt calling for a different scale still overrides it.
+- **Size guideline** (v2.1.202+): `workflowSizeGuideline` is sent to Claude as
+  *advice* on agent count — a prompt calling for a different scale still overrides
+  it. Values map to targets: `small` <5, `medium` <15, `large` <50, `unrestricted`
+  no guideline. Default is `medium` since v2.1.219 (earlier: `unrestricted`). Set
+  it via `/config`, or as a settings-file key (v2.1.219+) — the settings key takes
+  precedence and hides the `/config` row.
 - **Large-workflow warning** (v2.1.203+): a run that schedules >25 agents or whose
   projected token total passes 1.5M gets a `Large workflow` warning in the task
   panel, pointing to `/workflows` where the user can stop it. The size guideline's
