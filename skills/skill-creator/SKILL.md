@@ -294,7 +294,7 @@ The skill listing is budgeted at a fraction of the model's context window (defau
 
 ### Validation
 
-Run `claude plugin validate` as the primary validator for frontmatter and plugin structure — it is the canon. `python -m scripts.quick_validate` is a lightweight authoring guardrail: it *fails* only on hard errors (missing `description`, malformed YAML, over-limit lengths) and *warns* on everything else, including unknown keys — a warning is a prompt to double-check the docs, not a blocker.
+Run `claude plugin validate` as the primary validator for frontmatter and plugin structure — it is the canon. `python -m scripts.quick_validate` is a lightweight authoring guardrail. In its default Claude Code mode it *fails* only on hard errors (missing `description`, malformed YAML, over-limit lengths) and *warns* on everything else, including unknown keys — there a warning is a prompt to double-check the docs, not a blocker. In `--portable` mode (the mode `package_skill.py` runs) the rules are stricter: portability violations — any field outside the portable allowlist, `name` ≠ directory name — become hard errors, because the upload path rejects them.
 
 ---
 

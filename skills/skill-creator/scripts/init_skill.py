@@ -18,18 +18,21 @@ from pathlib import Path
 SKILL_TEMPLATE = """---
 # PORTABILITY: only six fields travel outside Claude Code (claude.ai uploads, the
 # Skills API, .skill packaging, enabling the skill for Cowork/cloud sessions):
-# name, description, license, compatibility, metadata, allowed-tools. Every other
-# field below is Claude Code-only — uncommenting one makes the skill fail those
-# paths with a hard "Unexpected key(s)" error. See references/frontmatter-reference.md section 1.1.
+# name, description, license, compatibility, metadata, allowed-tools. Those six are
+# listed first below; everything after the "Claude Code-only" divider is Claude Code-only
+# — uncommenting one makes the skill fail those paths with a hard "Unexpected key(s)"
+# error. See references/frontmatter-reference.md section 1.1.
 name: {skill_name}
 description: "TODO replace — one line stating what this skill does AND when to use it. Lead with the trigger condition (specific scenarios, file types, or tasks). Third person, single line."
 # license: [optional, portable: e.g. MIT, Apache-2.0]
 # compatibility: [optional, portable: environment requirements, max 500 chars]
 # metadata: [optional, portable: free-form YAML MAP; a non-map value is dropped. Don't reuse frontmatter field names as keys.]
+# allowed-tools: [optional, portable: e.g. "Bash Read Write" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)"]
+#
+# --- everything below this line is Claude Code-only (not portable) ---
 # when_to_use: [optional: Additional context for when to invoke this skill — trigger phrases, example requests. Combined with description, truncated at 1,536 chars (canon: references/frontmatter-reference.md section 1).]
 # argument-hint: [optional, e.g. "[file-path]"]
 # arguments: [optional: named positional arguments for $name substitution, e.g. "issue branch" or ["issue", "branch"]]
-# allowed-tools: [optional, e.g. "Bash Read Write" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)"]
 # disallowed-tools: [optional, e.g. "AskUserQuestion" — tools removed from the pool while active; clears on the next user message]
 # model: [optional, model override; accepts /model values or "inherit"; turn-scoped]
 # effort: [optional: low/medium/high/xhigh/max (available levels depend on the model)]

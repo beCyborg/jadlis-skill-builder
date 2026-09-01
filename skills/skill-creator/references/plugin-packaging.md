@@ -84,7 +84,7 @@ Lives in `.claude-plugin/marketplace.json`. For a single-repo plugin, point `sou
 ## Version semantics (this is the one people get wrong)
 
 - Setting `version` in `plugin.json` **pins** the plugin for every source type **except `command`**, whose version always includes a 12-char hash of what the command produced. Users get **no updates** until you bump it. Omit `version` and Claude Code falls back to the resolved commit SHA (so every push ships) or, for archives, the digest.
-- When both `plugin.json` and the marketplace entry set `version`, **`plugin.json` wins silently** — a stale manifest version masks the one in `marketplace.json`. Set it in one place.
+- When both `plugin.json` and the marketplace entry set `version`, **`plugin.json` wins silently** — a stale manifest version masks the one in `marketplace.json`. Set it in `plugin.json` only and leave `version` out of the marketplace entry.
 - **Bump the version on every release.** Editing a SKILL.md but forgetting to bump `plugin.json` means nobody receives the change.
 - Tag releases with `claude plugin tag --push` (convention `{plugin-name}--v{version}`) if anything depends on this plugin.
 

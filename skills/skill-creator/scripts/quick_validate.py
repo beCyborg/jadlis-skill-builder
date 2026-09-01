@@ -2,21 +2,36 @@
 """
 Quick validation script for skills — an authoring guardrail, not the canon.
 
-The canonical validator is `claude plugin validate`. This script fails only on
-hard errors (missing description, malformed YAML, over-limit lengths, bad
-types); everything else — including unknown keys — is a warning and exit 0.
+The canonical validator is `claude plugin validate`. What counts as a hard error
+depends on the mode, because the two target platforms disagree:
 
-Two modes:
-    Claude Code mode (default) — every documented Claude Code field is legal.
-    Portable mode (--portable, and what package_skill.py uses) — only the six
-    Agent Skills spec fields are legal, because claude.ai uploads, the Skills
-    API and `.skill` packaging reject anything else with a hard error.
+Claude Code mode (default) — lenient, matching what Claude Code actually loads.
+    Fails only on things Claude Code itself rejects or silently mangles (missing
+    description, malformed YAML, over-limit combined description, bad types,
+    invalid enum values). Everything portability-related — unknown keys,
+    non-portable fields, an over-long name or compatibility, a non-string
+    license, a non-map metadata — is a warning, and the exit code stays 0.
+
+Portable mode (--portable, and what package_skill.py's default gate uses) —
+    strict, matching claude.ai uploads / the Skills API / `.skill` packaging.
+    Only the six Agent Skills spec fields (name, description, license,
+    compatibility, metadata, allowed-tools) are legal; anything else is an
+    error, as are a name that breaks the spec, compatibility over 500 chars, a
+    non-string license and a non-map metadata. Checks that only exist for
+    Claude Code-only fields are skipped here — those keys already failed the
+    allowlist, and re-reporting them would double up (and, for `context: fork`,
+    advise a fix that is itself a portable error).
 
 Usage:
     python -m scripts.quick_validate <skill_directory> [--portable]
-    python -m scripts.quick_validate --self-test
+    python -m scripts.quick_validate --self-test [--portable]
+
+`--self-test` ignores `--portable`: each fixture carries its own mode, so the
+combination runs the same suite rather than erroring out.
 """
 
+import argparse
+import os
 import re
 import sys
 import tempfile
@@ -122,7 +137,8 @@ def validate_frontmatter(frontmatter, dir_name=None, portable=False):
         else:
             warnings.append(
                 f"Non-portable field(s): {', '.join(non_portable)}. Legal in Claude Code, but this "
-                f"skill won't upload to claude.ai / the Skills API and won't package — those paths "
+                f"skill won't upload to claude.ai / the Skills API and won't package portably "
+                f"(package_skill.py --cc-only packages it for Claude Code only) — those paths "
                 f"reject anything outside {allowed} with a hard error. Enabling a personal skill for "
                 f"Cowork or cloud sessions counts as an upload."
             )
@@ -159,11 +175,21 @@ def validate_frontmatter(frontmatter, dir_name=None, portable=False):
         )
     else:
         name = frontmatter.get('name')
-        if not isinstance(name, str):
+        name_is_str = isinstance(name, str)
+        if not name_is_str:
             errors.append(f"Name must be a string, got {type(name).__name__}")
             name = ''
         name = name.strip()
-        if name:
+        if not name:
+            # A present-but-blank `name` is not the "fall back to the directory
+            # name" case — it's a broken value, and skipping every name check for
+            # it would let an empty name through both modes.
+            if name_is_str:
+                errors.append(
+                    "'name' is present but empty. Remove the key to fall back to the "
+                    "directory name, or set it to the skill's kebab-case folder name."
+                )
+        else:
             # Portable mode follows the Agent Skills spec (agentskills.io): plain
             # kebab-case, <= 64 chars, equal to the folder name. Claude Code mode
             # additionally accepts a plugin-namespaced name such as
@@ -209,24 +235,31 @@ def validate_frontmatter(frontmatter, dir_name=None, portable=False):
                 # `name` is only a display label, and in a plugin skill replacing the
                 # command's last segment is the documented pattern.
 
+    # In portable mode the three shared fields below bind as hard errors: the
+    # upload path rejects them outright, so a warning would green-light an archive
+    # claude.ai will refuse.
+    portable_bucket = errors if portable else warnings
+
     compatibility = frontmatter.get('compatibility')
     if compatibility is not None:
         if not isinstance(compatibility, str):
             errors.append(f"compatibility must be a string, got {type(compatibility).__name__}")
         elif len(compatibility) > COMPATIBILITY_MAX:
-            warnings.append(
+            portable_bucket.append(
                 f"compatibility is {len(compatibility)} characters; the documented cap is "
                 f"{COMPATIBILITY_MAX}."
             )
 
     license_val = frontmatter.get('license')
     if license_val is not None and not isinstance(license_val, str):
-        warnings.append(f"license should be a string identifier (e.g. 'MIT'), got {type(license_val).__name__}.")
+        portable_bucket.append(
+            f"license should be a string identifier (e.g. 'MIT'), got {type(license_val).__name__}."
+        )
 
     metadata = frontmatter.get('metadata')
     if metadata is not None:
         if not isinstance(metadata, dict):
-            warnings.append(
+            portable_bucket.append(
                 f"metadata must be a YAML map; Claude Code silently drops a value that isn't one "
                 f"(got {type(metadata).__name__})."
             )
@@ -238,20 +271,10 @@ def validate_frontmatter(frontmatter, dir_name=None, portable=False):
                     f"The docs advise against it."
                 )
 
-    argument_hint = frontmatter.get('argument-hint')
-    if argument_hint is not None:
-        if not isinstance(argument_hint, str):
-            errors.append(f"argument-hint must be a string, got {type(argument_hint).__name__}")
-        elif len(argument_hint) > 128:
-            warnings.append(
-                f"argument-hint is {len(argument_hint)} characters; long hints may be clipped "
-                f"in the autocomplete box. Consider shortening it."
-            )
-
-    for field in ('arguments', 'disallowed-tools', 'allowed-tools', 'paths'):
+    def _check_str_or_list(field):
         value = frontmatter.get(field)
         if value is None:
-            continue
+            return
         if isinstance(value, list):
             for item in value:
                 if not isinstance(item, str):
@@ -259,49 +282,70 @@ def validate_frontmatter(frontmatter, dir_name=None, portable=False):
         elif not isinstance(value, str):
             errors.append(f"{field} must be a string or list, got {type(value).__name__}")
 
-    effort = frontmatter.get('effort')
-    if effort is not None:
-        valid_efforts = {'low', 'medium', 'high', 'xhigh', 'max'}
-        if effort not in valid_efforts:
-            errors.append(f"effort must be one of {', '.join(sorted(valid_efforts))}, got '{effort}'")
+    # allowed-tools is one of the six portable fields — checked in both modes.
+    _check_str_or_list('allowed-tools')
 
-    context_val = frontmatter.get('context')
-    if context_val is not None and context_val != 'fork':
-        errors.append(f"context must be 'fork' if present, got '{context_val}'")
+    # Everything below is a Claude Code-only field. In portable mode those keys were
+    # already rejected wholesale by the allowlist above, so re-checking their values
+    # would double-report — and the `agent`/`background` hints would recommend
+    # `context: fork`, which is itself a portable error.
+    if not portable:
+        argument_hint = frontmatter.get('argument-hint')
+        if argument_hint is not None:
+            if not isinstance(argument_hint, str):
+                errors.append(f"argument-hint must be a string, got {type(argument_hint).__name__}")
+            elif len(argument_hint) > 128:
+                warnings.append(
+                    f"argument-hint is {len(argument_hint)} characters; long hints may be clipped "
+                    f"in the autocomplete box. Consider shortening it."
+                )
 
-    agent = frontmatter.get('agent')
-    if agent is not None:
-        if not isinstance(agent, str):
-            errors.append(f"agent must be a string, got {type(agent).__name__}")
-        if context_val != 'fork':
-            warnings.append("'agent' is set but 'context' is not 'fork'. The agent field typically requires context: fork.")
+        for field in ('arguments', 'disallowed-tools', 'paths'):
+            _check_str_or_list(field)
 
-    shell = frontmatter.get('shell')
-    if shell is not None:
-        valid_shells = {'bash', 'powershell'}
-        if shell not in valid_shells:
-            errors.append(f"shell must be one of {', '.join(sorted(valid_shells))}, got '{shell}'")
+        effort = frontmatter.get('effort')
+        if effort is not None:
+            valid_efforts = {'low', 'medium', 'high', 'xhigh', 'max'}
+            if effort not in valid_efforts:
+                errors.append(f"effort must be one of {', '.join(sorted(valid_efforts))}, got '{effort}'")
 
-    hooks = frontmatter.get('hooks')
-    if hooks is not None and not isinstance(hooks, dict):
-        errors.append(f"hooks must be a dictionary, got {type(hooks).__name__}")
+        context_val = frontmatter.get('context')
+        if context_val is not None and context_val != 'fork':
+            errors.append(f"context must be 'fork' if present, got '{context_val}'")
 
-    model = frontmatter.get('model')
-    if model is not None and not isinstance(model, str):
-        errors.append(f"model must be a string, got {type(model).__name__}")
+        agent = frontmatter.get('agent')
+        if agent is not None:
+            if not isinstance(agent, str):
+                errors.append(f"agent must be a string, got {type(agent).__name__}")
+            if context_val != 'fork':
+                warnings.append("'agent' is set but 'context' is not 'fork'. The agent field typically requires context: fork.")
 
-    for field in BOOLEAN_FIELDS:
-        value = frontmatter.get(field)
-        if value is None:
-            continue
-        if _as_bool(value) is None:
-            errors.append(
-                f"{field} must be a boolean (true/false, yes/no, on/off, 1/0), "
-                f"got {type(value).__name__}: {value!r}"
-            )
+        shell = frontmatter.get('shell')
+        if shell is not None:
+            valid_shells = {'bash', 'powershell'}
+            if shell not in valid_shells:
+                errors.append(f"shell must be one of {', '.join(sorted(valid_shells))}, got '{shell}'")
 
-    if 'background' in frontmatter and context_val != 'fork':
-        warnings.append("'background' only applies with 'context: fork' — without it the field has no effect.")
+        hooks = frontmatter.get('hooks')
+        if hooks is not None and not isinstance(hooks, dict):
+            errors.append(f"hooks must be a dictionary, got {type(hooks).__name__}")
+
+        model = frontmatter.get('model')
+        if model is not None and not isinstance(model, str):
+            errors.append(f"model must be a string, got {type(model).__name__}")
+
+        for field in BOOLEAN_FIELDS:
+            value = frontmatter.get(field)
+            if value is None:
+                continue
+            if _as_bool(value) is None:
+                errors.append(
+                    f"{field} must be a boolean (true/false, yes/no, on/off, 1/0), "
+                    f"got {type(value).__name__}: {value!r}"
+                )
+
+        if 'background' in frontmatter and context_val != 'fork':
+            warnings.append("'background' only applies with 'context: fork' — without it the field has no effect.")
 
     return errors, warnings
 
@@ -335,7 +379,10 @@ def validate_skill(skill_path, portable=False):
     except yaml.YAMLError as e:
         return False, f"Invalid YAML in frontmatter: {e}"
 
-    dir_name = skill_path.resolve().name
+    # abspath, not resolve(): resolve() dereferences symlinks, so a skill reached
+    # through a symlinked directory would be compared against the link *target*'s
+    # name and fail the portable name == folder-name rule for no real reason.
+    dir_name = Path(os.path.abspath(skill_path)).name
     errors, warnings = validate_frontmatter(frontmatter, dir_name=dir_name, portable=portable)
 
     warning_text = "".join(f"\nWARNING: {w}" for w in warnings)
@@ -407,25 +454,59 @@ def _self_test():
          None, "YAML map", None, False),
         ("metadata reusing a field name -> warn", "description: X.\nname: my-skill\nmetadata:\n  paths: x",
          "my-skill", None, "reuses frontmatter field name", None, False),
+        # --- a present-but-blank name is broken, not "fall back to dirname" (review #4) ---
+        ("empty name -> FAIL in CC mode", "description: X.\nname: ''", "my-skill",
+         "present but empty", None, None, False),
+        ("whitespace name -> FAIL in portable mode", "description: X.\nname: '   '", "my-skill",
+         "present but empty", None, None, True),
+        # --- portable mode hardens the shared-field value checks (review #5) ---
+        ("compatibility 600 -> FAIL in portable mode", "description: X.\nname: my-skill\ncompatibility: " + "x" * 600,
+         "my-skill", "500", None, None, True),
+        ("license non-string -> warn in CC mode", "description: X.\nname: my-skill\nlicense: 42", "my-skill",
+         None, "license should be a string", None, False),
+        ("license non-string -> FAIL in portable mode", "description: X.\nname: my-skill\nlicense: 42", "my-skill",
+         "license should be a string", None, None, True),
+        ("metadata non-map -> FAIL in portable mode", "description: X.\nname: my-skill\nmetadata: not-a-map",
+         "my-skill", "YAML map", None, None, True),
+        # --- portable mode doesn't re-report keys the allowlist already killed (review #9) ---
+        ("bad context value -> only the allowlist error in portable mode",
+         "description: X.\nname: my-skill\ncontext: forked", "my-skill",
+         ["Unexpected key(s)", "!must be 'fork'"], None, None, True),
+        ("agent without fork -> no 'context: fork' advice in portable mode",
+         "description: X.\nname: my-skill\nagent: Explore", "my-skill",
+         "Unexpected key(s)", "!context: fork", None, True),
+        ("background without fork -> no warning in portable mode",
+         "description: X.\nname: my-skill\nbackground: true", "my-skill",
+         "Unexpected key(s)", "!only applies with", None, True),
+        ("allowed-tools is portable -> type still checked in portable mode",
+         "description: X.\nname: my-skill\nallowed-tools: 5", "my-skill",
+         "allowed-tools must be a string or list", None, None, True),
     ]
+
+    def _expectations(want):
+        """Normalize a want_* cell into a list of substrings ('!' = must be absent)."""
+        if want is None:
+            return []
+        return [want] if isinstance(want, str) else list(want)
 
     failures = 0
     for label, doc, dir_name, want_err, want_warn, extra, portable in fixtures:
         fm = load(doc)
         errors, warnings = validate_frontmatter(fm, dir_name=dir_name, portable=portable)
         problems = []
-        if want_err is None and errors:
-            problems.append(f"unexpected errors: {errors}")
-        if want_err is not None and not any(want_err in e for e in errors):
-            problems.append(f"expected error containing {want_err!r}, got: {errors}")
-        if want_warn is not None:
-            # A leading '!' asserts the warning must NOT be present.
-            if want_warn.startswith('!'):
-                forbidden = want_warn[1:]
-                if any(forbidden in w for w in warnings):
-                    problems.append(f"warning {forbidden!r} should be gone, got: {warnings}")
-            elif not any(want_warn in w for w in warnings):
-                problems.append(f"expected warning containing {want_warn!r}, got: {warnings}")
+        for kind, wants, actual in (
+            ("error", _expectations(want_err), errors),
+            ("warning", _expectations(want_warn), warnings),
+        ):
+            # A leading '!' asserts the message must NOT be present.
+            if kind == "error" and not any(not w.startswith('!') for w in wants) and actual:
+                problems.append(f"unexpected errors: {actual}")
+            for want in wants:
+                if want.startswith('!'):
+                    if any(want[1:] in a for a in actual):
+                        problems.append(f"{kind} {want[1:]!r} should be gone, got: {actual}")
+                elif not any(want in a for a in actual):
+                    problems.append(f"expected {kind} containing {want!r}, got: {actual}")
         if want_warn is None and want_err is None and warnings and label == "happy path":
             problems.append(f"unexpected warnings: {warnings}")
         if extra is not None and not extra(fm):
@@ -454,6 +535,46 @@ def _self_test():
             print(f"{'PASS' if ok else 'FAIL'}: {label}" + ("" if ok else f"\n      got: {message}"))
             failures += not ok
 
+        # The same BOM must not break scripts/utils.parse_skill_md, which run_eval,
+        # run_loop and improve_description all go through (review #3): a validator
+        # that says OK while the parser raises ValueError is the worst combination.
+        file_cases += 1
+        try:
+            from scripts.utils import parse_skill_md
+        except ImportError:
+            print("SKIP: parse_skill_md handles a BOM (run with `python -m scripts.quick_validate`)")
+            file_cases -= 1
+        else:
+            try:
+                parsed_name, _, _, _ = parse_skill_md(bom_dir)
+                ok = parsed_name == 'bom-skill'
+                detail = f"name parsed as {parsed_name!r}"
+            except Exception as exc:  # noqa: BLE001 — the point is that nothing raises
+                ok, detail = False, f"raised {type(exc).__name__}: {exc}"
+            print(f"{'PASS' if ok else 'FAIL'}: parse_skill_md handles a BOM"
+                  + ("" if ok else f"\n      {detail}"))
+            failures += not ok
+
+        # A skill reached through a symlinked directory must be judged by the link's
+        # own name, not the target's (review #8) — otherwise it can't be packaged.
+        target_dir = Path(tmp) / 'real-target'
+        target_dir.mkdir()
+        (target_dir / 'SKILL.md').write_text(
+            "---\nname: linked-skill\ndescription: Does X when asked.\n---\n\nBody.\n",
+            encoding='utf-8',
+        )
+        link_dir = Path(tmp) / 'linked-skill'
+        try:
+            link_dir.symlink_to(target_dir, target_is_directory=True)
+        except OSError:
+            print("SKIP: symlinked skill dir keeps its own name (symlinks unavailable)")
+        else:
+            file_cases += 1
+            valid, message = validate_skill(link_dir, portable=True)
+            print(f"{'PASS' if valid else 'FAIL'}: symlinked skill dir keeps its own name"
+                  + ("" if valid else f"\n      got: {message}"))
+            failures += not valid
+
         # A non-portable field must block packaging (package_skill.py's gate).
         np_dir = Path(tmp) / 'np-skill'
         np_dir.mkdir()
@@ -471,21 +592,66 @@ def _self_test():
             print(f"{'PASS' if ok else 'FAIL'}: {label}" + ("" if ok else f"\n      got: {message}"))
             failures += not ok
 
+    # improve_description must refuse a when_to_use that leaves no room for a
+    # description, instead of chasing a negative budget through claude calls (review #6).
+    try:
+        from scripts.improve_description import improve_description
+    except (ImportError, TypeError):
+        # ImportError: run as a plain script, no package context.
+        # TypeError: interpreter older than 3.10 — improve_description's `str | None`
+        # annotations are evaluated at import, so the module can't load at all there.
+        print("SKIP: improve_description floors the description budget "
+              "(needs `python -m scripts.quick_validate` on Python 3.10+)")
+    else:
+        file_cases += 1
+        try:
+            improve_description(
+                skill_name="x", skill_content="", current_description="d",
+                eval_results={"results": [], "summary": {"passed": 0, "total": 0}},
+                history=[], model="haiku", when_to_use="w" * 1500,
+            )
+            ok, detail = False, "no exception raised — it would have called claude"
+        except ValueError as exc:
+            ok = "shorten when_to_use" in str(exc).lower()
+            detail = f"ValueError text lacks the 'shorten when_to_use' hint: {exc}"
+        except Exception as exc:  # noqa: BLE001
+            ok, detail = False, f"raised {type(exc).__name__} instead of ValueError: {exc}"
+        print("PASS: improve_description floors the description budget" if ok else
+              f"FAIL: improve_description floors the description budget\n      {detail}")
+        failures += not ok
+
     total = len(fixtures) + file_cases
     print(f"\n{total - failures}/{total} fixtures passed")
     return failures
 
 
-if __name__ == "__main__":
-    if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
+def main():
+    parser = argparse.ArgumentParser(
+        prog="python -m scripts.quick_validate",
+        description="Validate a skill's SKILL.md frontmatter (authoring guardrail; "
+                    "`claude plugin validate` is the canon).",
+        epilog="--self-test ignores --portable: every fixture carries its own mode.",
+    )
+    parser.add_argument("skill_directory", nargs="?", help="Path to the skill directory")
+    parser.add_argument("--portable", action="store_true",
+                        help="Validate against the Agent Skills spec's six fields "
+                             "(what claude.ai uploads / the Skills API / packaging enforce)")
+    parser.add_argument("--self-test", action="store_true",
+                        help="Run the built-in fixture suite instead of validating a directory")
+    args = parser.parse_args()
+
+    if args.self_test:
+        if args.skill_directory:
+            parser.error("--self-test takes no skill directory")
         sys.exit(1 if _self_test() else 0)
 
-    args = [a for a in sys.argv[1:] if a != "--portable"]
-    portable = "--portable" in sys.argv[1:]
-    if len(args) != 1:
-        print("Usage: python -m scripts.quick_validate <skill_directory> [--portable] | --self-test")
-        sys.exit(1)
+    if not args.skill_directory:
+        parser.error("a skill directory is required (or use --self-test)")
 
-    valid, message = validate_skill(args[0], portable=portable)
+    valid, message = validate_skill(args.skill_directory, portable=args.portable)
     print(message)
     sys.exit(0 if valid else 1)
+
+
+if __name__ == "__main__":
+    main()

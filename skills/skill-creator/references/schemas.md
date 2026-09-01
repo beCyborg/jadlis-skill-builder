@@ -107,7 +107,7 @@ Variables available in SKILL.md content, replaced at load time:
 | `${CLAUDE_PLUGIN_DATA}` | Plugin persistent data directory, survives plugin updates. Plugin skills only; same two substitution sites |
 | `$name` | Named argument from `arguments` frontmatter list |
 
-If `$ARGUMENTS` is not present in the skill body, arguments are appended as `ARGUMENTS: <value>`.
+If **no placeholder receives an argument**, arguments are appended as `ARGUMENTS: <value>` at the end of the skill content. An indexed placeholder with no argument at its position stays literal and does *not* count as receiving one; a named placeholder always counts, because it expands to an empty string. Details: `references/frontmatter-reference.md` §3.
 
 Dynamic context injection: `` !`command` `` runs shell commands before content is sent to Claude. Output replaces the placeholder inline. A non-zero exit **aborts the whole skill invocation** (exit 1 from search/compare commands excepted); injected commands never prompt for permission — an ask or deny rule aborts too. Details: `references/frontmatter-reference.md` §4.
 

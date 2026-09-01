@@ -6,7 +6,10 @@ from pathlib import Path
 
 def parse_skill_md(skill_path: Path) -> tuple[str, str, str, str]:
     """Parse a SKILL.md file, returning (name, description, when_to_use, full_content)."""
-    content = (skill_path / "SKILL.md").read_text()
+    # utf-8-sig: a BOM-prefixed SKILL.md loads fine in Claude Code (v2.1.239+) and
+    # quick_validate accepts it, so this parser must not choke on the BOM either —
+    # otherwise the validator says OK and run_eval/run_loop/improve_description die.
+    content = (skill_path / "SKILL.md").read_text(encoding="utf-8-sig")
     lines = content.split("\n")
 
     if lines[0].strip() != "---":

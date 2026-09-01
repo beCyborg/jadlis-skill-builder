@@ -73,15 +73,17 @@ architecture 4 has its own, different caps):
   `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`. Excess spawns fail with an error telling
   Claude not to retry; size fan-out waves accordingly.
 - **Depth 3** of nesting below the main conversation (default since v2.1.219; in
-  v2.1.217–218 the default was 1; set `1` to turn nesting off) —
-  `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`.
+  v2.1.217–218 the default was 1) — `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`.
+  Setting it to `1` leaves subagents spawnable from the main conversation but
+  stops them spawning their own, which is as close to "nesting off" as it gets.
 - **No per-session total.** The old 200-subagent-per-session spawn cap was
   **removed in v2.1.224**; `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION` is now a
   no-op. A long-running session no longer refuses new agents once it has spawned
   many — don't design a skill (or a budget) around exhausting a session quota.
 
 Both variables accept a positive whole number in plain digits; anything else is
-ignored, so the limits can be adjusted but not turned off. A skill that fans out
+ignored, so the limits can be raised or lowered but never removed (there is no
+"unlimited" value). A skill that fans out
 wide should still batch its spawns against the concurrency cap and degrade
 gracefully when a spawn is refused.
 
@@ -166,10 +168,13 @@ token cost of all options.
 
 ### 6. Hooks (cross-cutting enforcement)
 
-Not an execution architecture but a layer over any of the others. A skill-scoped
+Not an execution architecture but a layer over any of the others. A skill-declared
 `PreToolUse` command hook that exits with code 2 blocks the action and feeds its
 message back — deterministic where prose is only a hint. Use for must-happen /
-must-not-happen steps in any architecture. See `references/frontmatter-reference.md` §6.
+must-not-happen steps in any architecture. Caveat: a skill's hook is **not**
+scoped to the invocation — it stays registered for the rest of the session. For a
+one-shot gate set `once: true`; for a standing one keep the `matcher`/`if` as
+narrow as the rule actually needs. See `references/frontmatter-reference.md` §6.
 
 ### 7. Scheduled / cron skill
 
