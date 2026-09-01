@@ -1,5 +1,7 @@
 # JSON Schemas
 
+> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
+
 This document defines the JSON schemas used by skill-creator.
 
 ## Working with JSON Files
@@ -36,13 +38,18 @@ Defines the frontmatter structure for skill files. Numeric limits and version
 gates here mirror `references/frontmatter-reference.md` §1 (the canon) — update
 both together.
 
+Fields marked **[portable]** are the only six allowed outside Claude Code (claude.ai
+uploads, the Skills API, `package_skill.py`, Cowork/cloud enablement). Anything else
+is a hard `Unexpected key(s)` error there — see `frontmatter-reference.md` §1.1.
+Frontmatter is read only when the opening `---` is the file's first line.
+
 ```yaml
 ---
 # Recommended
-description: string       # no angle brackets; combined with when_to_use, truncated at 1,536 chars. Primary trigger mechanism.
+description: string       # [portable] combined with when_to_use, truncated at 1,536 chars. Primary trigger mechanism. Angle brackets are escaped by Claude Code, not rejected — but avoid them.
 
 # Optional - Identity
-name: string              # display label; kebab-case, max 64 chars. Defaults to the directory name. The COMMAND you type comes from the directory name (except a plugin-root SKILL.md, where name sets it). Keep name == directory basename to avoid autocomplete glitches.
+name: string              # [portable] display label; defaults to the directory name. In a personal/project skill the COMMAND comes from the directory name and a mismatch is harmless. In a plugin skill under skills/, name replaces the command's LAST SEGMENT and the plugin prefix stays (name: fancy -> /my-plugin:fancy; not doubled if it already carries the prefix, v2.1.246+); in a plugin-root SKILL.md it supplies the whole final segment. Kebab-case + 64-char cap come from the Agent Skills spec (agentskills.io), not skills.md — they bind on the portable path.
 when_to_use: string       # additional trigger context; appended to description (counts toward the 1,536-char cap)
 
 # Optional - Invocation Control
@@ -52,7 +59,7 @@ disable-model-invocation: boolean  # default false; true = user-only. Also block
 user-invocable: boolean   # default true; false = Claude-only (hidden from / menu)
 
 # Optional - Execution
-allowed-tools: string|list  # pre-approve tools (no permission prompt) while active, e.g. "Bash Read" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)". Does NOT restrict the tool pool.
+allowed-tools: string|list  # [portable] pre-approve tools (no permission prompt) for the INVOKING TURN; the grant clears on the next user message. e.g. "Bash Read" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)". Does NOT restrict the tool pool. Workspace trust does NOT gate this field.
 disallowed-tools: string|list  # remove tools from the model while active, e.g. "AskUserQuestion". Clears on the next user message. (v2.1.152+)
 model: string             # model override; accepts /model values or "inherit"; turn-scoped (not saved — session model resumes next prompt)
 effort: enum              # low | medium | high | xhigh | max (available levels depend on the model)
@@ -64,19 +71,20 @@ shell: enum               # bash (default) | powershell
 # boolean fields accept yes/no/on/off/1/0 in any case, besides true/false (v2.1.218+)
 
 # Optional - Lifecycle
-hooks: object             # hooks scoped to skill lifecycle (PreToolUse, PostToolUse, etc.)
+hooks: object             # registered on invocation, KEPT FOR THE REST OF THE SESSION (any of the 33 events). `once: true` removes a hook after its first SUCCESSFUL run.
 
 # Optional - Metadata
-license: string           # license identifier (Agent Skills standard)
-metadata: object          # custom metadata (Agent Skills standard)
-display-name: string      # human-friendly display name (Agent Skills standard)
-default-enabled: boolean  # whether the skill starts enabled (Agent Skills standard)
-fallback: string          # fallback behavior hint (Agent Skills standard)
+license: string           # [portable] license covering the skill; Claude Code accepts but doesn't act on it
+metadata: object          # [portable] free-form YAML MAP; a non-map value is dropped. Don't reuse frontmatter field names (e.g. `paths`) as keys.
+compatibility: string     # [portable] environment requirements, max 500 chars (Agent Skills spec). Current field, NOT deprecated.
+display-name: string      # Claude Code-only (v2.1.186+); not in the Agent Skills spec — not portable
+default-enabled: boolean  # Claude Code-only (v2.1.186+); not in the Agent Skills spec — not portable
+fallback: string          # Claude Code-only (v2.1.186+); not in the Agent Skills spec — not portable
 # display-name/default-enabled/fallback/metadata.* accept kebab/snake/camelCase keys (v2.1.186+)
 ---
 ```
 
-`description` is the one field to treat as required — `quick_validate` fails without it. Everything else (including `name`) is optional: a missing `name` only warns (the skill falls back to the directory name; convention is `name` == directory basename). `compatibility` is a legacy field some older skills carry — the validator tolerates it with a deprecation warning, but it is not a current Claude Code field.
+`description` is the one field to treat as required — `quick_validate` fails without it (a deliberate authoring guardrail; the docs call it merely recommended). Everything else (including `name`) is optional: a missing `name` only warns (the skill falls back to the directory name).
 
 See `references/frontmatter-reference.md` for detailed field documentation, invocation control matrix, and examples.
 
@@ -95,11 +103,13 @@ Variables available in SKILL.md content, replaced at load time:
 | `${CLAUDE_SKILL_DIR}` | Directory containing the skill's SKILL.md file (for plugin skills: the skill's subdirectory, not the plugin root) |
 | `${CLAUDE_EFFORT}` | Current effort level: low/medium/high/xhigh/max (v2.1.120+). Ultracode is not a distinct level — it reports as `xhigh`. |
 | `${CLAUDE_PROJECT_DIR}` | Project root directory — same path hooks receive as `CLAUDE_PROJECT_DIR`. Works in the skill body and in `allowed-tools` rules. (v2.1.196+) |
+| `${CLAUDE_PLUGIN_ROOT}` | Plugin install directory. Plugin skills only; substituted in the body and in `allowed-tools` rules |
+| `${CLAUDE_PLUGIN_DATA}` | Plugin persistent data directory, survives plugin updates. Plugin skills only; same two substitution sites |
 | `$name` | Named argument from `arguments` frontmatter list |
 
 If `$ARGUMENTS` is not present in the skill body, arguments are appended as `ARGUMENTS: <value>`.
 
-Dynamic context injection: `` !`command` `` runs shell commands before content is sent to Claude. Output replaces the placeholder inline.
+Dynamic context injection: `` !`command` `` runs shell commands before content is sent to Claude. Output replaces the placeholder inline. A non-zero exit **aborts the whole skill invocation** (exit 1 from search/compare commands excepted); injected commands never prompt for permission — an ask or deny rule aborts too. Details: `references/frontmatter-reference.md` §4.
 
 ---
 

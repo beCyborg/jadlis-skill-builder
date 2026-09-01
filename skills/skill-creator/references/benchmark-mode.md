@@ -98,7 +98,7 @@ Extract from each completed executor's metrics:
 - **tool_uses** = number of tool calls made
 - **duration_ms** / 1000 = execution time in seconds
 
-The exact format of completion notifications varies by environment — look for token counts, tool call counts, and duration in whatever format your environment provides.
+The exact format of completion notifications varies by environment — look for token counts, tool call counts, and duration in whatever format your environment provides. Since v2.1.243 `/tasks` and the agent dialogs also show the model and effort level each subagent ran on, which is the quickest way to confirm both configurations actually ran on the same model before comparing their numbers.
 
 Write these into the run's `timing.json` **immediately as each notification arrives** — the notification is the only place `total_tokens`/`duration_ms` are reported; they aren't persisted anywhere else, and batching risks losing them (format in `references/schemas.md`). The aggregate script then computes mean/stddev/min/max across runs for each configuration, falling back to `timing.json` when `grading.json` lacks time/tokens.
 

@@ -1,10 +1,12 @@
 # SKILL.md Frontmatter Reference
 
-> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
+> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
 
 Complete reference for all frontmatter fields available in Claude Code SKILL.md files.
 
-Claude Code skills follow the [Agent Skills](https://agentskills.io) open standard, which works across multiple AI tools. Claude Code extends the standard with additional features like invocation control, subagent execution, and dynamic context injection.
+Claude Code skills follow the [Agent Skills](https://agentskills.io) open standard, which works across multiple AI tools. Claude Code extends the standard with additional features like invocation control, subagent execution, and dynamic context injection. Only six of the fields below travel outside Claude Code — see §1.1.
+
+**Parsing rule:** Claude Code reads the frontmatter only when the opening `---` is the file's **first line**. Otherwise it treats the whole file, `---` markers included, as skill content — the skill still loads, but with no metadata at all. No blank line, comment, or BOM-visible preamble may precede it.
 
 ---
 
@@ -12,32 +14,59 @@ Claude Code skills follow the [Agent Skills](https://agentskills.io) open standa
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `name` | string | No (defaults to directory name) | Display label shown in skill listings. Kebab-case, max 64 characters. **It does not set the command you type** — the command comes from the skill's directory name (`.claude/skills/<dir>/` → `/<dir>`). The one exception is a plugin-root `SKILL.md` with no `skills/` subdir, where `name` *does* set the command. Keep `name` equal to the directory basename; a mismatch can suppress argument-hint/autocomplete. |
-| `description` | string | Recommended | What the skill does and when to use it. No angle brackets (`<>`). Front-load the key use case: the combined `description` and `when_to_use` text is truncated at **1,536 characters** in the skill listing. If omitted, uses the first paragraph of markdown content. This is the primary triggering mechanism. |
+| `name` | string | No (defaults to directory name) | Display label shown in skill listings. **In a personal or project skill it does not set the command you type** — the command comes from the skill's directory name (`.claude/skills/<dir>/` → `/<dir>`), and a mismatch is harmless. **In a plugin skill under `skills/`, `name` replaces the last segment of the command** and the plugin prefix stays: `my-plugin/skills/review/SKILL.md` with `name: fancy` → `/my-plugin:fancy` (bare `/fancy` works too unless taken). A `name` that already carries the plugin prefix is not doubled as of v2.1.246 (v2.1.216–v2.1.245 doubled it). For a plugin-root `SKILL.md` there is no skill directory, so `name` supplies the whole final segment, falling back to the plugin's install-directory name. Kebab-case and a 64-character cap come from the [Agent Skills spec](https://agentskills.io), not from `skills.md`, and they bind on the portable path (§1.1); Claude Code itself accepts a longer name and a colon-namespaced one. |
+| `description` | string | Recommended | What the skill does and when to use it. Front-load the key use case: the combined `description` and `when_to_use` text is truncated at **1,536 characters** in the skill listing. If omitted, uses the first paragraph of markdown content. This is the primary triggering mechanism. Angle brackets are not rejected — Claude Code escapes `<>` in the text that reaches Claude — but avoid them anyway: they read as markup and waste trigger budget. |
 | `when_to_use` | string | No | Additional context for when Claude should invoke the skill — trigger phrases, example requests. Appended to `description` in the skill listing and counts toward the 1,536-character cap. |
 | `argument-hint` | string | No | Hint shown during autocomplete in the `/` menu, e.g. `[issue-number]`, `[file-path]`. |
 | `arguments` | string or list | No | Named positional arguments for `$name` substitution in the skill content. Accepts a space-separated string or a YAML list. Names map to argument positions in order. |
-| `allowed-tools` | string or list | No | Pre-approves the listed tools (no permission prompt) while this skill is active. Accepts a space-separated string (`Read Grep Glob`) or YAML list (`["Bash", "Read"]`). Supports patterns: `Bash(gh *)`. **It does not restrict the tool pool** — every tool remains callable; to remove tools use `disallowed-tools`. For project skills, this takes effect only after you accept the workspace-trust dialog, so review project skills before trusting a repo. Context: the default permission mode is named **Manual** as of v2.1.200 (`manual` is accepted alongside `default`), so unlisted tools prompt unless the user switched modes. |
-| `disallowed-tools` | string or list | No | Removes the listed tools from the model's available pool while this skill is active — the inverse of `allowed-tools`. Useful for autonomous/background-loop skills that should never call a tool (e.g. `AskUserQuestion`). Accepts a space/comma string or YAML list. The restriction clears when you send your next message. Works for slash commands too. (v2.1.152+) |
-| `model` | string | No | Model override for this skill. Accepts the same values as `/model`, or `inherit` to keep the active model. The override is **turn-scoped**: it applies for the rest of the current turn and is not saved — the session model resumes on your next prompt. A value excluded by an org `availableModels` allowlist is ignored. The session default is the recommended model for the account type (an org default set by an admin overrides it) — don't hardcode assumptions about which model that resolves to. |
+| `allowed-tools` | string or list | No | Pre-approves the listed tools (no permission prompt) **for the turn that invokes the skill**. The grant clears when the user sends the next message, even though the skill content stays in context; invoking the skill again re-applies it for that turn. To pre-approve for a whole session, use permission allow rules instead. Accepts a space- or comma-separated string (`Read Grep Glob`) or YAML list (`["Bash", "Read"]`). Supports patterns: `Bash(gh *)`. **It does not restrict the tool pool** — every tool remains callable; to remove tools use `disallowed-tools`. **Workspace trust does not gate this field**: Claude Code applies a project skill's `allowed-tools` whenever the skill is invoked, including a `-p` run in a folder never trusted — so read the `allowed-tools` of skills checked into a repo *before* running Claude Code there. Context: the default permission mode is named **Manual** as of v2.1.200 (`manual` is accepted alongside `default`), so unlisted tools prompt unless the user switched modes. |
+| `disallowed-tools` | string or list | No | Removes the listed tools from the model's available pool while this skill is active — the inverse of `allowed-tools`. Useful for autonomous/background-loop skills that should never call a tool (e.g. `AskUserQuestion`). Accepts a space/comma string or YAML list. The restriction clears when you send your next message. Like deny rules, it **cannot remove `EndConversation`** while any other tool remains. Works for slash commands too. (v2.1.152+) |
+| `model` | string | No | Model override for this skill. Accepts the same values as `/model`, or `inherit` to keep the active model. The override is **turn-scoped**: it applies for the rest of the current turn and is not saved — the session model resumes on your next prompt. With `context: fork` the value sets the **forked subagent's** model rather than the session's, and an excluded value then follows the subagent-override rules. A value excluded by an org `availableModels` allowlist is ignored. The session default is the recommended model for the account type (an org default set by an admin overrides it) — don't hardcode assumptions about which model that resolves to. |
 | `effort` | enum | No | Effort level override. Values: `low`, `medium`, `high`, `xhigh`, `max`. Available levels depend on the model. |
 | `paths` | string or list | No | Glob patterns limiting when the skill is activated. Accepts a comma-separated string or a YAML list. When set, skill auto-loads only when working with files matching the patterns. Uses the same format as path-specific rules. Skills in nested `.claude/skills/` directories and `--add-dir` directories are automatically discovered. |
 | `shell` | enum | No | Shell for dynamic context injection commands. Values: `bash` (default), `powershell`. `powershell` runs inline commands via the PowerShell tool — on by default on Windows without Git Bash; elsewhere it requires `CLAUDE_CODE_USE_POWERSHELL_TOOL=1`. |
 | `context` | enum | No | Execution context. Set to `fork` to run the skill in a forked subagent context instead of the main conversation. As of v2.1.218 the fork runs in the **background by default** — see the `background` field and the consequences listed in §5. |
 | `agent` | string | No | Which subagent type to use when `context: fork`. Options: `Explore`, `Plan`, `general-purpose`, or a custom agent name. |
 | `background` | boolean | No (default: `true`) | Only applies with `context: fork`. Set to `false` to wait for the forked subagent's result in the turn that invoked the skill, instead of running it in the background. (v2.1.218+; before that, forked skills always ran in the foreground.) |
-| `hooks` | object | No | Hooks scoped to this skill's lifecycle. Only active while the skill runs. See section 6. |
+| `hooks` | object | No | Hooks Claude Code registers when the skill is invoked and **keeps running for the rest of the session**, on turns after the skill's own turn as well. They are *not* removed when the skill "finishes" — to drop one after its first successful run, set `once: true` on it. See section 6. |
 | `disable-model-invocation` | boolean | No (default: `false`) | When `true`, prevents Claude from auto-loading this skill. It will not appear in Claude's context and can only be invoked manually by the user via `/skill-name`. It also cannot be preloaded into a subagent via the agent's `skills:` field (Claude Code skips it with a warning). As of v2.1.196 it **also blocks the skill from running when a scheduled task fires** with the skill as its prompt — do not set it on skills meant to run from cron/scheduled tasks. As of v2.1.222, when Claude tries to invoke such a skill, the refusal tells it to ask the user to run the skill instead of replicating its workflow. |
 | `user-invocable` | boolean | No (default: `true`) | When `false`, hides the skill from the `/` menu. Only Claude can invoke it programmatically. |
-| `license` | string | No | License identifier (e.g. `MIT`, `Apache-2.0`). From Agent Skills standard; not in Claude Code docs. |
-| `metadata` | object | No | Custom key-value pairs for your own use. From Agent Skills standard; not in Claude Code docs. |
-| `display-name` | string | No | Human-friendly display name. From Agent Skills standard; not in Claude Code docs. |
-| `default-enabled` | boolean | No | Whether the skill starts enabled. From Agent Skills standard; not in Claude Code docs. |
-| `fallback` | string | No | Fallback behavior hint. From Agent Skills standard; not in Claude Code docs. |
+| `license` | string | No | License covering the skill (e.g. `MIT`, `Apache-2.0`). Part of the Agent Skills spec and a documented Claude Code field; Claude Code accepts it but doesn't act on it. In the portable six (§1.1). |
+| `metadata` | object | No | Free-form YAML **map** for your own key-value data (entitlement, catalog fields) read by your own tooling. Claude Code doesn't act on its contents and **drops a value that isn't a map** — `metadata: some-string` is silently discarded. Don't reuse frontmatter field names such as `paths` as keys. In the portable six (§1.1). |
+| `compatibility` | string | No | Environment requirements — intended products, system prerequisites — as defined by the Agent Skills spec. **String of up to 500 characters.** Claude Code accepts it but doesn't act on it. Not deprecated: it is a current field and one of the portable six (§1.1), so a skill meant for claude.ai/the Skills API should carry it. |
+| `display-name` | string | No | Human-friendly display name. **Claude Code-only** key (accepted since v2.1.186); it is not in the Agent Skills spec and not in the docs' field table. Outside Claude Code it is a hard error — see §1.1. |
+| `default-enabled` | boolean | No | Whether the skill starts enabled. **Claude Code-only** key (v2.1.186+), not in the Agent Skills spec and not in the docs' field table. Not portable — see §1.1. |
+| `fallback` | string | No | Fallback behavior hint. **Claude Code-only** key (v2.1.186+), not in the Agent Skills spec and not in the docs' field table. Not portable — see §1.1. |
 
 **Key casing (v2.1.186+):** the `display-name`, `default-enabled`, `fallback`, and `metadata.*` keys are accepted in kebab-case, snake_case, or camelCase (`display-name` / `display_name` / `displayName`). Prefer kebab-case for consistency with the rest of the frontmatter. Malformed YAML frontmatter no longer fails silently — Claude Code loads the skill body with empty metadata instead (v2.1.186+).
 
 **Boolean literals (v2.1.218+):** boolean fields accept `yes`, `no`, `on`, `off`, `1`, and `0` in any letter case, in addition to `true` and `false`. Before v2.1.218 only `true`/`false` were recognized.
+
+---
+
+## 1.1 Portability: frontmatter outside Claude Code
+
+Claude Code accepts every field in the table above. **No other distribution path does.** Outside Claude Code only the six fields of the [Agent Skills](https://agentskills.io) spec are allowed:
+
+| Distribution path | Frontmatter fields you can use |
+|---|---|
+| Claude Code skills at any level, including plugin skills | Every field in §1 |
+| claude.ai skill uploads, the Skills API, packaging with `package_skill.py` | `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools` |
+
+Enabling a personal skill for **Cowork and cloud sessions**, including routines, uploads it to claude.ai — so the same six-field rule applies there.
+
+Any field outside the six makes packaging or upload **fail with a hard error**, not ignore the field:
+
+```
+Unexpected key(s) in SKILL.md frontmatter: argument-hint. Allowed properties are: allowed-tools, compatibility, description, license, metadata, name
+```
+
+Practical consequences when authoring:
+
+- A skill that must travel (claude.ai, Skills API, `.skill` package, Cowork/cloud enablement) may use **only** those six. Everything else — `when_to_use`, `argument-hint`, `arguments`, `disallowed-tools`, `model`, `effort`, `paths`, `shell`, `context`, `agent`, `background`, `disable-model-invocation`, `user-invocable`, `hooks`, `display-name`, `default-enabled`, `fallback` — is Claude Code-only.
+- Claude Code-only **body** features (dynamic context injection, `${CLAUDE_*}` substitutions) don't function in claude.ai chat or through the API either, even though the body itself uploads fine.
+- All six fields load in Claude Code unchanged, so spec-conformant frontmatter needs no fork of the file.
+- `scripts/quick_validate.py` warns when a skill carries non-portable fields; `scripts/package_skill.py` refuses to package such a skill, because packaging *is* the upload path.
 
 ---
 
@@ -74,8 +103,14 @@ Available variables inside SKILL.md content (below the frontmatter):
 | `${CLAUDE_SKILL_DIR}` | Absolute path to the directory containing this skill's SKILL.md file. For plugin skills, this is the skill's subdirectory within the plugin, not the plugin root. |
 | `${CLAUDE_EFFORT}` | Current effort level: `low`, `medium`, `high`, `xhigh`, or `max`. Adapt skill instructions by effort. Ultracode is **not** a distinct level — it reports as `xhigh`. (v2.1.120+) |
 | `${CLAUDE_PROJECT_DIR}` | The project root directory — the same path hooks and MCP servers receive as `CLAUDE_PROJECT_DIR`. Applies to both the skill body and `allowed-tools` (e.g. `Bash(${CLAUDE_PROJECT_DIR}/scripts/lint.sh *)`). Use it to reference project-local scripts independent of where the skill is installed. (v2.1.196+) |
+| `${CLAUDE_PLUGIN_ROOT}` | The plugin's installation directory. **Substituted only in plugin skills.** Use it for scripts or files bundled anywhere in the plugin, including resources shared between the plugin's skills. |
+| `${CLAUDE_PLUGIN_DATA}` | The plugin's persistent data directory, which survives plugin updates. **Substituted only in plugin skills.** Use it for installed dependencies, generated files, or caches that must outlive an update. |
 
-If `$ARGUMENTS` is **not** referenced anywhere in the skill content, arguments are automatically appended as `ARGUMENTS: <value>` at the end.
+Claude Code substitutes `${CLAUDE_SKILL_DIR}` and `${CLAUDE_PROJECT_DIR}` in **two** places: the skill's markdown body, and Bash rules in `allowed-tools`. In a plugin skill it substitutes `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` in the same two places. Using the same variable in both is the pattern that lets a skill run a bundled script with no permission prompt.
+
+If **no placeholder receives an argument**, Claude Code appends `ARGUMENTS: <value>` at the end of the skill content. A placeholder is `$ARGUMENTS`, an indexed form (`$1`), or a named argument. An indexed placeholder with no argument at its position stays literal and does *not* count as receiving one; a named placeholder always counts, because it expands to an empty string.
+
+Files in `.claude/commands/` support the same frontmatter **except `name` and `paths`**, which Claude Code ignores in a command file — relevant when converting a command to a skill or back.
 
 Unmatched positional placeholders (`$1`/`$2` with no corresponding argument) are preserved verbatim in the content as of v2.1.210 — before that they were silently stripped. Don't rely on stripping to hide optional-argument scaffolding; guard optional arguments in prose instead.
 
@@ -120,8 +155,14 @@ Summarize the changes in this PR.
 When invoked, Claude receives the skill content with real diff output already embedded -- it never sees the backtick commands.
 
 ### Notes
-- Commands run in the project's working directory.
-- If a command fails, the error output is included in place of the placeholder.
+- **Working directory**: each command runs in the *session shell's* current working directory, which moves when Claude runs `cd`. For paths that must resolve identically every time, use `${CLAUDE_SKILL_DIR}` or `${CLAUDE_PROJECT_DIR}`.
+- **A failed command aborts the entire skill invocation** — not just its own placeholder. Claude never sees the skill content for that invocation; the abort shows ``Shell command failed for pattern "..."`` with the command's output under `[stderr]`. Design around this: a broken injection command kills the skill, it does not degrade it.
+- **Exit codes**: with the default `bash` shell, *any* non-zero exit is a failure. One carveout: exit code 1 from search/comparison commands (`grep`, `diff`, …) is treated as a normal result and its output is injected; exit 2 or higher fails even for those. Append `|| true` to anything else you expect to exit non-zero — a check script that exits 1 on findings is the classic case. Under `shell: powershell` the carveout list differs (includes `grep` and `git diff`, excludes `find` and `diff`).
+- **Injected commands never prompt for permission.** If the permission check returns anything other than allow, the invocation aborts with ``Shell command permission check failed for pattern "..."`` — including a rule that would normally *ask*. Pre-approve the command with `allowed-tools`; a matching ask or deny rule still aborts regardless.
+- **Position of `!`**: the inline form is recognized only when `!` is at the start of a line or immediately after whitespace. `` KEY=!`cmd` `` stays literal text and does not run.
+- **One pass only**: substitution runs once over the original file, and command output is inserted as plain text without being re-scanned — a command cannot emit a placeholder for a later pass.
+- **Timeout / output size**: each command runs under the Bash tool's default 2-minute timeout. If the Bash tool auto-backgrounds a timed-out command the skill still renders, and the injected text names the background task and its output file; a command the tool never auto-backgrounds is killed at the timeout, which aborts the invocation. Output past the inline ceiling arrives as a file path plus a short preview.
+- `shell: bash` **when bash is unavailable** (Windows without Git Bash) fails the invocation before any command runs: ``Skill <name> requires bash (`shell: bash` in frontmatter) but Git Bash was not found``.
 - Use this for injecting dynamic context like git status, file listings, API responses, etc.
 
 ### Multi-line Dynamic Context
@@ -192,11 +233,33 @@ The full content of each listed skill is injected into the subagent's context wh
 
 ## 6. Hooks in Skills
 
-Hooks can be defined directly in skill frontmatter. They are **scoped to the skill's lifecycle** -- they are only active while the skill is running, and are removed when the skill completes.
+Hooks can be defined directly in skill frontmatter, in the same configuration format as settings-based hooks.
+
+**Lifetime — the common trap.** Claude Code registers a skill's hooks when the skill is invoked and **keeps running them for the rest of the session**, including turns after the skill's own turn. They are *not* removed when the skill "completes". A `PreToolUse` gate you added for one task stays armed until the session ends. The only way to drop a hook earlier is `once: true`, which removes it after its **first successful run** (see below). (Subagent frontmatter hooks behave differently: those *are* removed when the subagent finishes.)
 
 ### Supported hook events
 
-All standard Claude Code hook events are supported. This list is not exhaustive — see the [hooks docs](https://code.claude.com/docs/en/hooks) for the full set. Commonly used: `PreToolUse`, `PostToolUse`, `Notification`, `Stop`, `SubagentStart`, `SubagentStop`, `SessionStart`, `MessageDisplay` (transform/hide assistant message text as it's displayed, v2.1.152+), `DirectoryAdded` (fires when a working directory is added mid-session via `/add-dir` or the SDK, v2.1.219+; non-blocking), plus the agent-teams events `TaskCreated`, `TaskCompleted`, and `TeammateIdle` (used to gate quality — a hook exiting with code 2 blocks the action and feeds its message back). `SessionStart`/`Setup`/`SubagentStart` hooks must be **command-type** (prompt/agent hooks are rejected), and a `SessionStart` hook can return `reloadSkills: true` to make skills it installed available in the same session.
+All 33 Claude Code hook events are supported in skill frontmatter. The full set:
+
+| Group | Events |
+|---|---|
+| Session | `SessionStart`, `Setup`, `SessionEnd`, `InstructionsLoaded`, `ConfigChange` |
+| Prompt | `UserPromptSubmit`, `UserPromptExpansion`, `MessageDisplay` |
+| Tools | `PreToolUse`, `PermissionRequest`, `PermissionDenied`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch` |
+| Agents / tasks | `SubagentStart`, `SubagentStop`, `TaskCreated`, `TaskCompleted`, `TeammateIdle` |
+| Turn | `Stop`, `StopFailure`, `Notification` |
+| Environment | `CwdChanged`, `DirectoryAdded`, `FileChanged`, `WorktreeCreate`, `WorktreeRemove` |
+| Context | `PreCompact`, `PostCompact` |
+| Model | `PreModelSwitch`, `PostModelSwitch` (v2.1.251) |
+| MCP | `Elicitation`, `ElicitationResult` |
+
+Notes that matter when a skill uses them:
+
+- **Gate-capable events** (exit 2 blocks): `PreToolUse`, `UserPromptSubmit`, `UserPromptExpansion`, `PostToolBatch`, `Stop`, `SubagentStop`, `TeammateIdle`, `TaskCreated`, `TaskCompleted`, `ConfigChange`, `PreCompact`, `PreModelSwitch`, `Elicitation`, `ElicitationResult`, `WorktreeCreate`. Everything else is observational — exit 2 there at most surfaces stderr.
+- `PermissionRequest` and `PermissionDenied` carry their **own decision model**: exit 2 is not honored; deny via the `decision` object, and use `hookSpecificOutput.retry: true` on `PermissionDenied`.
+- `PreModelSwitch` can block a model switch (exit 2 or `decision: "block"`) — directly relevant to skills that set `model`. A `PreModelSwitch` hook canceled at its timeout also blocks the switch.
+- `MessageDisplay` transforms/hides assistant message text as it's displayed (v2.1.152+); `DirectoryAdded` fires on mid-session `/add-dir` (v2.1.219+, non-blocking); `SessionEnd` hooks share a 1.5-second budget.
+- **Hook-type restrictions:** `SessionStart` and `Setup` support `type: "command"` **and `type: "mcp_tool"`** only (prompt/http/agent hooks are rejected). `SubagentStart` carries no such restriction. A `SessionStart` hook can return `reloadSkills: true` to make skills it installed available in the same session.
 
 **Workspace trust (v2.1.218+):** frontmatter hooks in a *project subagent* run only after the user accepts the workspace-trust dialog for the folder the agent file came from. Before v2.1.218 these hooks could run from untrusted folders. Relevant when a skill ships companion agents with hooks.
 
@@ -204,11 +267,15 @@ All standard Claude Code hook events are supported. This list is not exhaustive 
 
 | Type | Description |
 |---|---|
-| `command` | Run a shell command. Non-zero exit blocks the action. |
+| `command` | Run a shell command. **Only `exit 2` blocks**, and only on a gate-capable event — see the exit-code rule below. |
 | `http` | Send an HTTP request. |
 | `mcp_tool` | Call a tool on a connected MCP server. |
 | `prompt` | Inject a prompt for Claude to process. |
 | `agent` | Spawn a subagent to evaluate. |
+
+**Exit-code rule for `command` hooks.** Exit 2 is the blocking signal. Every *other* non-zero code is a **non-blocking error**: the action proceeds and the transcript shows a `<hook> hook error` notice with the first line of stderr. Exit 1 — the conventional Unix failure code — does **not** block. If a hook is meant to enforce policy, it must `exit 2`. The one exception is `WorktreeCreate`, where **any** non-zero exit aborts worktree creation. A hook whose script path is missing or non-executable lands in the same non-blocking bucket (exit 127), which silently disables a gate — watch for the notice on its first run.
+
+**Common hook fields worth knowing:** `if` (a single permission-rule pattern such as `"Bash(git *)"` that filters when the hook runs — evaluated **only** on tool events `PreToolUse`/`PostToolUse`/`PostToolUseFailure`/`PermissionRequest`/`PermissionDenied`; on any other event a hook with `if` set never runs), `timeout`, `statusMessage`, `once`.
 
 ### Example
 
@@ -232,7 +299,7 @@ Perform the requested operations with security checks enabled.
 
 ### The `once` field
 
-Setting `once: true` on a hook causes it to run only once per session, then be automatically removed. This is a **skills-only feature** -- it is not available in global or project hooks.
+Setting `once: true` removes the hook after its **first successful run**. A run that fails, blocks with exit code 2, or times out leaves the hook in place, so it fires again on the next matching event — `once` is not "at most one execution". This is a **skills-only feature**: it is ignored in settings files and in agent frontmatter.
 
 ```yaml
 hooks:
@@ -246,9 +313,10 @@ hooks:
 
 ### Best practices for hooks in skills
 
-- Use `once: true` for one-time checks (e.g., environment verification at skill start)
-- Keep hook commands fast — they block the tool call
-- Use `prompt` type hooks for soft guidance, `command` type for hard enforcement
+- Use `once: true` for one-time checks (e.g., environment verification at skill start) — remembering it only clears after a *successful* run
+- Remember the hook outlives the skill invocation: a gate you register stays armed for the whole session. Prefer `once: true` or a narrow `if`/`matcher` over a broad standing gate
+- Keep hook commands fast — they block the tool call. For long work (deploys, test suites) set `"async": true`, available on `type: "command"` hooks only: an async hook runs in the background, can't block, and its `timeout` isn't enforced
+- Use `prompt` type hooks for soft guidance, `command` type with `exit 2` for hard enforcement
 - Test hooks in isolation before adding them to skill frontmatter
 
 ---
@@ -326,8 +394,11 @@ Plugin skills are not affected; manage those through `/plugin`.
 
 Use the CLI validation command to check skill frontmatter for YAML parse errors and schema violations before deploying:
 
+Point it at the directory holding the skills (v2.1.233+ accepts a skills directory, not only a plugin or marketplace directory):
+
 ```bash
-claude plugin validate
+claude plugin validate .claude/skills
+claude plugin validate ~/.claude/skills
 ```
 
 This validates:

@@ -73,12 +73,18 @@ def package_skill(skill_path, output_dir=None):
         print(f"❌ Error: SKILL.md not found in {skill_path}")
         return None
 
-    # Run validation before packaging
-    print("🔍 Validating skill...")
-    valid, message = validate_skill(skill_path)
+    # Run validation before packaging, in PORTABLE mode: a `.skill` archive goes
+    # to claude.ai / the Skills API, which accept only the six Agent Skills spec
+    # fields (name, description, license, compatibility, metadata, allowed-tools)
+    # and reject anything else with a hard "Unexpected key(s)" error. Packaging a
+    # skill that can't be uploaded is worse than refusing to package it.
+    print("🔍 Validating skill (portable / upload rules)...")
+    valid, message = validate_skill(skill_path, portable=True)
     if not valid:
         print(f"❌ Validation failed: {message}")
         print("   Please fix the validation errors before packaging.")
+        print("   Claude Code-only frontmatter fields must be removed for a portable .skill;")
+        print("   see references/frontmatter-reference.md section 1.1.")
         return None
     print(f"✅ {message}\n")
 

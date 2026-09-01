@@ -16,8 +16,16 @@ from pathlib import Path
 
 
 SKILL_TEMPLATE = """---
+# PORTABILITY: only six fields travel outside Claude Code (claude.ai uploads, the
+# Skills API, .skill packaging, enabling the skill for Cowork/cloud sessions):
+# name, description, license, compatibility, metadata, allowed-tools. Every other
+# field below is Claude Code-only — uncommenting one makes the skill fail those
+# paths with a hard "Unexpected key(s)" error. See references/frontmatter-reference.md section 1.1.
 name: {skill_name}
-description: "TODO replace — one line stating what this skill does AND when to use it. Lead with the trigger condition (specific scenarios, file types, or tasks). Third person, single line, no angle brackets."
+description: "TODO replace — one line stating what this skill does AND when to use it. Lead with the trigger condition (specific scenarios, file types, or tasks). Third person, single line."
+# license: [optional, portable: e.g. MIT, Apache-2.0]
+# compatibility: [optional, portable: environment requirements, max 500 chars]
+# metadata: [optional, portable: free-form YAML MAP; a non-map value is dropped. Don't reuse frontmatter field names as keys.]
 # when_to_use: [optional: Additional context for when to invoke this skill — trigger phrases, example requests. Combined with description, truncated at 1,536 chars (canon: references/frontmatter-reference.md section 1).]
 # argument-hint: [optional, e.g. "[file-path]"]
 # arguments: [optional: named positional arguments for $name substitution, e.g. "issue branch" or ["issue", "branch"]]
@@ -32,7 +40,7 @@ description: "TODO replace — one line stating what this skill does AND when to
 # background: [optional, only with context: fork: false to wait for the fork's result in the invoking turn (full tool set, /rewind coverage); default true]
 # disable-model-invocation: [optional: true to prevent Claude from auto-loading this skill]
 # user-invocable: [optional: false to hide from slash command menu, for background knowledge only]
-# hooks: [optional: hooks scoped to this skill's lifecycle]
+# hooks: [optional: registered on invocation and kept for the REST OF THE SESSION, not removed when the skill finishes. Use `once: true` to drop a hook after its first SUCCESSFUL run.]
 ---
 
 # {skill_title}
@@ -288,7 +296,8 @@ def init_skill(skill_name, path):
 def main():
     if len(sys.argv) < 4 or sys.argv[2] != '--path':
         print("Usage: init_skill.py <skill-name> --path <path>")
-        print("\nSkill name requirements:")
+        print("\nSkill name requirements (Agent Skills spec, agentskills.io — these bind")
+        print("when the skill is packaged or uploaded; Claude Code itself is laxer):")
         print("  - Kebab-case identifier (e.g., 'my-data-analyzer')")
         print("  - Lowercase letters, digits, and hyphens only")
         print("  - Max 64 characters")

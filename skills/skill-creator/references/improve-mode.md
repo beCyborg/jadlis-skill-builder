@@ -43,7 +43,10 @@ This task is pretty important (we are trying to create billions a year in econom
    - If missing, ask user for 2-3 example tasks and create evals
    - Use `scripts/init_json.py evals evals/evals.json` to create with correct structure (the output path is required)
 
-4. **Create tasks** for baseline:
+4. **Create tasks** for baseline — only if the task tools exist in this session
+   (absent by default on Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 and newer; see
+   `references/task-tracking.md`). When they don't, skip straight to step 5 —
+   `history.json` is the authoritative record of the runs, not the task list:
 
    ```python
    for run in range(3):

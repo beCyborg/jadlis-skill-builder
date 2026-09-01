@@ -78,6 +78,12 @@ scripts/prepare_eval.py <skill-path> <eval-id> --output-dir <workspace>/eval-<id
 
 Each run directory gets an `eval_metadata.json` (prompt, assertions, staged paths). Give evals descriptive `eval_name`s where possible — they read better in the viewer than bare eval numbers (see `references/schemas.md`).
 
+If the task tools are available in this session, track the eval on the task list —
+they are absent by default on Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 and newer
+(see `references/task-tracking.md`), so skip this step silently when they are and
+report stage transitions in the response text instead. Either way, the run
+directory and `grading.json` remain the authoritative state.
+
 ```python
 task_id = TaskCreate(
     subject=f"Eval {eval_id}",
@@ -138,7 +144,7 @@ After grading completes, finalize timing.json.
 
 ## Step 5: Display Results
 
-Update the task to `completed` (`TaskUpdate(taskId=task_id, status="completed")`). Display:
+Update the task to `completed` (`TaskUpdate(taskId=task_id, status="completed")`), if a task was created at all. Display:
 
 - Pass/fail status for each expectation with evidence
 - Overall pass rate
