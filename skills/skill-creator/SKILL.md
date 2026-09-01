@@ -62,7 +62,7 @@ See `references/mode-diagrams.md` for detailed visual workflow diagrams.
 
 ## Task Tracking
 
-Use tasks to track progress. See references/task-tracking.md for lifecycle, creation, and stage progression details.
+Use tasks to track progress when the task tools are available (they are off by default on Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 and newer — see the availability section in references/task-tracking.md). See references/task-tracking.md for lifecycle, creation, and stage progression details.
 
 ---
 
@@ -143,7 +143,9 @@ Based on interview, fill in the required fields and relevant optional fields:
 - **description**: What the skill does — this is the primary triggering mechanism. Front-load key use cases: the combined `description` + `when_to_use` text is truncated at **1,536 characters** in the skill listing. Include both what the skill does AND specific contexts for when to use it. Claude tends to "undertrigger" skills — make descriptions a little "pushy" (e.g., "Build dashboards for internal data. Use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'")
 - **when_to_use** *(optional)*: Additional trigger context — phrases, example requests. Appended to `description` in the skill listing and counts toward the 1,536-char cap. Use `description` for WHAT it does and `when_to_use` for WHEN to invoke it.
 
-**Optional fields**: invocation control (`when_to_use`, `arguments`, `argument-hint`, `disable-model-invocation`, `user-invocable`), execution (`allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`/`agent`/`background`, `paths`, `shell`), lifecycle (`hooks`). Full field table, semantics, and version notes: `references/frontmatter-reference.md` §1; quick schema: `references/schemas.md`.
+**Optional fields**: invocation control (`when_to_use`, `arguments`, `argument-hint`, `disable-model-invocation`, `user-invocable`), execution (`allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`/`agent`/`background`, `paths`, `shell`), session hooks (`hooks` — registered on invocation and kept for the rest of the session, not dropped when the skill finishes), portability metadata (`license`, `metadata`, `compatibility`). Full field table, semantics, and version notes: `references/frontmatter-reference.md` §1; quick schema: `references/schemas.md`.
+
+**Portability check**: only six fields — `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools` — survive outside Claude Code (claude.ai uploads, the Skills API, `.skill` packaging, enabling a personal skill for Cowork/cloud sessions). Anything else fails those paths with a hard `Unexpected key(s)` error. If the skill must travel, restrict the frontmatter to those six; `scripts/quick_validate.py` warns and `scripts/package_skill.py` refuses. Details: `references/frontmatter-reference.md` §1.1.
 
 **Invocation control**: By default, both user and Claude can invoke a skill. Set `disable-model-invocation: true` for user-only skills (e.g., dangerous operations; also blocks preload into subagents and scheduled-task runs). Set `user-invocable: false` for Claude-only background knowledge skills that shouldn't appear in the `/` menu. Matrix and takeaways: `references/frontmatter-reference.md` §2.
 

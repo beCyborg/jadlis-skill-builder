@@ -1,6 +1,6 @@
 # Skill Content Lifecycle
 
-> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
+> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
 
 How skill content behaves across a Claude Code session.
 
@@ -27,7 +27,9 @@ If a skill seems to stop influencing behavior after the first response, the cont
 
 Editing a skill file on disk does not update the already-loaded content in the current session — you must re-invoke the skill to pick up changes.
 
-Re-invoking is cheap when nothing changed: as of v2.1.202, re-invoking an already-loaded skill no longer appends a duplicate copy of its instructions to context (before that, each re-invocation duplicated the content).
+Re-invoking is cheap when nothing changed: as of v2.1.202, re-invoking a skill whose **rendered content is identical** to the copy already in context adds only a short "already loaded" note instead of a second copy. The dedup is content-based, not name-based — when the rendered content differs, because arguments changed or a dynamic-context command produced new output, Claude Code appends the **full content again**. A skill with a `!` injection therefore re-appends on every invocation whose command output moved.
+
+Note that the `allowed-tools` grant does *not* persist with the content: it covers only the turn that invoked the skill and clears on the next user message, so re-invoking is also how you re-apply the grant.
 
 ## Live change detection
 

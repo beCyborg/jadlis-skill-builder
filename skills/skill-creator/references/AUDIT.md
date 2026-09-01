@@ -5,18 +5,24 @@ Update this file on every release that touches doc-derived content.
 
 ## Audit markers
 
-Six version-dense files carry a `> Last audited against Claude Code docs:` line;
+Eight version-dense files carry a `> Last audited against Claude Code docs:` line;
 the other references change rarely and are covered by release-time grep instead.
+(`schemas.md` joined the list in v1.8.0: 7 versioned claims and a mirror in 4 of
+the SYNC facts below — the one file that could drift silently.)
 
 | File | Last audited | CC version |
 |---|---|---|
-| `references/frontmatter-reference.md` | 2026-08-05 | v2.1.222 |
-| `references/orchestration-guide.md` | 2026-08-05 | v2.1.222 |
-| `references/agent-authoring.md` | 2026-08-05 | v2.1.222 |
-| `references/plugin-packaging.md` | 2026-08-05 | v2.1.222 |
-| `references/skill-lifecycle.md` | 2026-08-05 | v2.1.222 |
-| `references/environments.md` | 2026-08-05 | v2.1.222 |
-| `references/sandboxing.md` | 2026-08-05 | v2.1.222 |
+| `references/frontmatter-reference.md` | 2026-09-01 | ~v2.1.251 (mirror b290425) |
+| `references/orchestration-guide.md` | 2026-09-01 | ~v2.1.251 (mirror b290425) |
+| `references/agent-authoring.md` | 2026-09-01 | ~v2.1.251 (mirror b290425) |
+| `references/plugin-packaging.md` | 2026-09-01 | ~v2.1.251 (mirror b290425) |
+| `references/skill-lifecycle.md` | 2026-09-01 | ~v2.1.251 (mirror b290425) |
+| `references/environments.md` | 2026-09-01 | ~v2.1.251 (mirror b290425) |
+| `references/sandboxing.md` | 2026-09-01 | ~v2.1.251 (mirror b290425) |
+| `references/schemas.md` | 2026-09-01 | ~v2.1.251 (mirror b290425) |
+
+Note: installed CLI at audit time was 2.1.252; the docs mirror's changelog stops
+at 2.1.251, so ~v2.1.251 is the honest upper bound of what was verified.
 
 ## SYNC registry — facts duplicated across files
 
@@ -25,11 +31,14 @@ When the fact changes, update the canon first, then every mirror.
 
 | Fact | Canon | Mirrors |
 |---|---|---|
-| 1,536-char cap on combined `description` + `when_to_use` (`skillListingMaxDescChars`) | `frontmatter-reference.md` §1 `description` row | `frontmatter-reference.md` §7; `SKILL.md` (Frontmatter, Context Budget); `schemas.md` (frontmatter block); `description-optimization.md` (checklist); `quick_validate.py` (limit + error text); `init_skill.py` (template comment) |
-| Scheduled-task footgun: `disable-model-invocation: true` blocks cron runs (v2.1.196) | `orchestration-guide.md` §7 (architecture 7 footgun) | `frontmatter-reference.md` §1 + §2; `SKILL.md` (Invocation control); `schemas.md` |
-| Reserved / built-in command names to avoid | `description-optimization.md` §"Naming the skill" | `SKILL.md` (Frontmatter `name` bullet — pointer only, no list) |
+| 1,536-char cap on combined `description` + `when_to_use` (`skillListingMaxDescChars`) | `frontmatter-reference.md` §1 `description` row | `frontmatter-reference.md` §7; `SKILL.md` (Frontmatter, Context Budget); `schemas.md` (frontmatter block); `description-optimization.md` (checklist); `quick_validate.py` (limit + error text); `init_skill.py` (template comment); `improve_description.py` (budget math + prompt text); `house-style.md` |
+| Scheduled-task footgun: `disable-model-invocation: true` blocks cron runs (v2.1.196) | `orchestration-guide.md` §7 (architecture 7 footgun) | `frontmatter-reference.md` §1 + §2; `SKILL.md` (Invocation control); `schemas.md`; `house-style.md`; `creation-interview.md` |
+| Reserved / built-in command names to avoid (incl. `design` v2.1.234+, `workflow-authoring` v2.1.248+, aliases `checkup`/`proactive`) | `description-optimization.md` §"Naming the skill" | `SKILL.md` (Frontmatter `name` bullet — pointer only, no list) |
 | Fork background default + narrower tool set + `/rewind` gap (v2.1.218) | `frontmatter-reference.md` §5 | `frontmatter-reference.md` §1 (`context`/`background` rows); `orchestration-guide.md` (architectures 2, 3); `SKILL.md` (Orchestration); `schemas.md`; `init_skill.py` |
-| Agent-tool limits: 20 concurrent / 200 per session / depth 3 | `orchestration-guide.md` (architecture 3) | — (Workflow-tool 16/1,000 caps are a *different* fact, same file, architecture 4) |
+| Agent-tool limits: 20 concurrent / depth 3; no per-session total (the 200 cap was removed in v2.1.224, `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION` is a no-op) | `orchestration-guide.md` (architecture 3) | — (Workflow-tool 16/1,000 caps are a *different* fact, same file, architecture 4) |
+| Skill-declared hooks live to the END of the session (registered on invocation; only `once: true` removes one early, after its first *successful* run) | `frontmatter-reference.md` §6 | `frontmatter-reference.md` §1 (`hooks` row); `SKILL.md` (optional-field list); `schemas.md`; `init_skill.py` (template comment) |
+| Portability allowlist: outside Claude Code only `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`; any other field = hard error on upload/packaging | `frontmatter-reference.md` §1.1 | `schemas.md` (`[portable]` tags); `environments.md` (Cowork/cloud); `quick_validate.py` (CC-mode warning / `--portable` hard error); `package_skill.py` (packaging gate); `init_skill.py` (template comment); `SKILL.md` (portability paragraph) |
+| Plugin-skill `name` replaces the last command segment (`skills/review/` + `name: fancy` → `/my-plugin:fancy`, v2.1.216+; prefix not doubled v2.1.246+); portable packaging still requires name = dirname, kebab-case (agentskills.io spec) | `frontmatter-reference.md` §1 `name` row | `schemas.md`; `SKILL.md` (Frontmatter `name` bullet); `quick_validate.py` (mode-dependent name checks); `description-optimization.md` (64-cap attribution) |
 
 ## Release checklist
 
@@ -40,6 +49,7 @@ When the fact changes, update the canon first, then every mirror.
 5. Grep the SYNC registry facts — every mirror consistent with its canon.
 6. Bump the version in **both** manifests: `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
 7. Commit, tag `vX.Y.Z`, push; then `claude plugin update skill-creator@skill-creator-plugin`. Never run `/plugin` operations before the push — marketplace autoUpdate can wipe uncommitted edits.
+8. Do ALL editing in a dev clone (`~/skill-creator-plugin`), never in `~/.claude/plugins/marketplaces/skill-creator-plugin/` — the background marketplace refresh resets that clone to origin (it deleted a local *branch* on 2026-09-01; any `claude` start, including headless `claude -p`, can trigger it). Push the working branch early.
 
 ## Rejected decisions (do not re-propose without new evidence)
 

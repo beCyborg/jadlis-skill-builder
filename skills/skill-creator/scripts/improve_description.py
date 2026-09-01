@@ -57,8 +57,30 @@ def improve_description(
     test_results: dict | None = None,
     log_dir: Path | None = None,
     iteration: int | None = None,
+    when_to_use: str = "",
 ) -> str:
-    """Call Claude to improve the description based on eval results."""
+    """Call Claude to improve the description based on eval results.
+
+    The 1,536-character cap applies to `description` + `when_to_use` combined,
+    so `when_to_use` (when the skill has one) eats into the budget available to
+    the description. Measuring the description alone would let the pair overflow.
+    """
+    # The 1,536-char cap is on `description` + `when_to_use` combined.
+    when_to_use = (when_to_use or "").strip()
+    _wtu_cost = len(when_to_use) + 1 if when_to_use else 0
+    budget = 1536 - _wtu_cost
+
+    def _combined_len(desc: str) -> int:
+        return len(desc) + _wtu_cost
+
+    budget_tip = (
+        f"- The combined description + when_to_use text is truncated at 1,536 characters in the "
+        f"skill listing. This skill's when_to_use already uses {len(when_to_use)} of them, so keep "
+        f"the description under {budget} characters."
+        if when_to_use else
+        "- The combined description + when_to_use text is truncated at 1,536 characters in the skill listing."
+    )
+
     failed_triggers = [
         r for r in eval_results["results"]
         if r["should_trigger"] and not r["pass"]
@@ -135,7 +157,7 @@ Here are some tips that we've found to work well in writing these descriptions:
 - The skill should be phrased in the imperative -- "Use this skill for" rather than "this skill does"
 - The skill description should focus on the user's intent, what they are trying to achieve, vs. the implementation details of how the skill works.
 - The description competes with other skills for Claude's attention — make it distinctive and immediately recognizable.
-- The combined description + when_to_use text is truncated at 1,536 characters in the skill listing.
+{budget_tip}
 - If you're getting lots of failures after repeated attempts, change things up. Try different sentence structures or wordings.
 
 I'd encourage you to be creative and mix up the style in different iterations since you'll have multiple opportunities to try different approaches and we'll just grab the highest-scoring one at the end. 
@@ -155,24 +177,31 @@ Please respond with only the new description text in <new_description> tags, not
         "response": text,
         "parsed_description": description,
         "char_count": len(description),
-        "over_limit": len(description) > 1536,
+        "when_to_use_char_count": len(when_to_use),
+        "combined_char_count": _combined_len(description),
+        "over_limit": _combined_len(description) > 1536,
     }
 
-    # Safety net: if the description blew past the 1,536-char listing limit
-    # (combined description + when_to_use), make one fresh single-turn call
-    # that quotes the too-long version and asks for a shorter rewrite. (The
-    # old SDK path did this as a true multi-turn; `claude -p` is one-shot,
-    # so we inline the prior output into the new prompt instead.)
-    if len(description) > 1536:
+    # Safety net: if description + when_to_use blew past the 1,536-char listing
+    # limit, make one fresh single-turn call that quotes the too-long version and
+    # asks for a shorter rewrite. (The old SDK path did this as a true multi-turn;
+    # `claude -p` is one-shot, so we inline the prior output into the new prompt.)
+    if _combined_len(description) > 1536:
+        wtu_note = (
+            f" The skill's existing `when_to_use` field already uses "
+            f"{len(when_to_use)} of those characters, so the description itself "
+            f"must fit in {budget}."
+            if when_to_use else ""
+        )
         shorten_prompt = (
             f"{prompt}\n\n"
             f"---\n\n"
-            f"A previous attempt produced this description, which at "
-            f"{len(description)} characters exceeds the 1,536-character limit "
-            f"(combined description + when_to_use is truncated at 1,536 "
-            f"characters in the skill listing):\n\n"
+            f"A previous attempt produced this description; combined with "
+            f"when_to_use it reaches {_combined_len(description)} characters and "
+            f"exceeds the 1,536-character limit (description + when_to_use is "
+            f"truncated at 1,536 characters in the skill listing).{wtu_note}\n\n"
             f'"{description}"\n\n'
-            f"Rewrite it to be under 1,536 characters while keeping the most "
+            f"Rewrite it to fit in {budget} characters while keeping the most "
             f"important trigger words and intent coverage. Respond with only "
             f"the new description in <new_description> tags."
         )
@@ -184,6 +213,7 @@ Please respond with only the new description text in <new_description> tags, not
         transcript["rewrite_response"] = shorten_text
         transcript["rewrite_description"] = shortened
         transcript["rewrite_char_count"] = len(shortened)
+        transcript["rewrite_combined_char_count"] = _combined_len(shortened)
         description = shortened
 
     transcript["final_description"] = description
@@ -215,7 +245,7 @@ def main():
     if args.history:
         history = json.loads(Path(args.history).read_text())
 
-    name, _, _, content = parse_skill_md(skill_path)
+    name, _, when_to_use, content = parse_skill_md(skill_path)
     current_description = eval_results["description"]
 
     if args.verbose:
@@ -229,6 +259,7 @@ def main():
         eval_results=eval_results,
         history=history,
         model=args.model,
+        when_to_use=when_to_use,
     )
 
     if args.verbose:

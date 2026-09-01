@@ -1,6 +1,6 @@
 # Sandboxing Notes for Skill Authors
 
-> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
+> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
 
 Why this matters: **a skill that runs bash must not assume it has network access
 or an unrestricted filesystem.** The user's sandbox settings decide, not the
@@ -20,6 +20,12 @@ hanging or silently producing empty output.
   sentinel value while the proxy substitutes the real one on egress. On macOS,
   *file* masking falls back to `deny`: a skill reading a masked credential file
   there gets nothing. Don't design a skill around reading credentials from disk.
+- **`--restricted` / `CLAUDE_CODE_RESTRICTED=1`** (v2.1.248+): a stricter mode than
+  sandboxing — it *removes* the built-in tools that run commands or code, plus
+  `WebFetch` unless named in `--tools`, keeps file tools inside the working
+  directory, refuses `bypassPermissions`, and ignores user, project, and local
+  settings files. A skill whose steps shell out has no Bash at all there, not a
+  denied Bash. Detect and say so instead of assuming the command silently failed.
 - **`sandbox.filesystem.disabled`** (v2.1.216+): skips filesystem isolation
   while keeping network egress control. The inverse also holds — filesystem
   isolation may be ON, so a skill's script must not assume it can write outside

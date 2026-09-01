@@ -1,6 +1,6 @@
 # Choosing an Orchestration Architecture
 
-> Last audited against Claude Code docs: 2026-08-05 (v2.1.222)
+> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
 
 When a new skill involves more than a single pass of inline work — fan-out over many
 items, background execution, scheduled runs, enforcement — the most consequential
@@ -39,12 +39,16 @@ Right when: a single heavy, self-contained task whose intermediate output would
 pollute the main context (a big scan, a long report). Not for fan-out — it is one
 fork, not many.
 
-**Disambiguation — three unrelated "forks":** `context: fork` (this architecture)
+**Disambiguation — four unrelated "forks":** `context: fork` (this architecture)
 runs a *skill* in a subagent. The `/fork` command starts a separate background
 *session* with its own worktree (v2.1.221+; it doesn't share the original
 checkout) and its own subagent budget. The in-session conversation fork is
-`/subtask` (named `/fork` before v2.1.212). Don't design a skill around one
-expecting the semantics of another.
+`/subtask` (named `/fork` before v2.1.212). And the Agent tool's
+`subagent_type: "fork"` spawns a *subagent that inherits the full conversation
+and prompt cache* — this "fork mode" is on by default in interactive sessions
+since v2.1.232 and off by default in `-p`/headless and Agent SDK sessions
+(`CLAUDE_CODE_FORK_SUBAGENT=1`/`0` overrides either way). Don't design a skill
+around one expecting the semantics of another.
 
 ### 3. Direct subagents (hub-and-spoke)
 
@@ -68,15 +72,18 @@ architecture 4 has its own, different caps):
 - **20 concurrent** subagents per session (v2.1.217+; ultracode sessions exempt) —
   `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`. Excess spawns fail with an error telling
   Claude not to retry; size fan-out waves accordingly.
-- **200 per session** total (v2.1.212+) — `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION`.
-  Nested subagents, forks, and background subagents all count; agents a workflow
-  script spawns with `agent()` do not.
 - **Depth 3** of nesting below the main conversation (default since v2.1.219; in
-  v2.1.217–218 the default was 1) — `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`.
+  v2.1.217–218 the default was 1; set `1` to turn nesting off) —
+  `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`.
+- **No per-session total.** The old 200-subagent-per-session spawn cap was
+  **removed in v2.1.224**; `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION` is now a
+  no-op. A long-running session no longer refuses new agents once it has spawned
+  many — don't design a skill (or a budget) around exhausting a session quota.
 
-All three variables accept a positive whole number; the limits can be raised but
-not turned off. A skill that fans out near these numbers should batch its spawns
-and degrade gracefully when a spawn is refused.
+Both variables accept a positive whole number in plain digits; anything else is
+ignored, so the limits can be adjusted but not turned off. A skill that fans out
+wide should still batch its spawns against the concurrency cap and degrade
+gracefully when a spawn is refused.
 
 ### 4. Thin skill + saved Workflow
 
@@ -102,6 +109,14 @@ deterministic in structure, budget-scaled loops. The hard constraint: **a workfl
 accepts no mid-run user input** — only permission prompts can pause it. Anything
 interactive must happen in Phase A or C.
 
+**Before writing or hand-editing the script, load the bundled `workflow-authoring`
+skill** (`/workflow-authoring`, v2.1.248+). In v2.1.248 the Workflow tool's own
+description was cut from ~5.7k to ~1k tokens and the script-writing reference —
+script API, resume behaviour, quality patterns, worked examples — moved into that
+skill. Claude normally loads it on its own before writing a script; run it yourself
+before editing a saved `.js` by hand. Don't rely on the Workflow tool description
+to still carry the API.
+
 Environment knobs to be aware of when authoring workflow-backed skills:
 - **Size guideline** (v2.1.202+): `workflowSizeGuideline` is sent to Claude as
   *advice* on agent count — a prompt calling for a different scale still overrides
@@ -120,6 +135,10 @@ Environment knobs to be aware of when authoring workflow-backed skills:
 - **MCP tools**: workflow agents reach session-connected MCP tools via `ToolSearch`
   (deferred tool schemas load on demand) — but interactively-authenticated servers
   may be absent in headless/cron runs.
+- **Prefix stagger** (v2.1.229+): a fan-out staggers same-prefix sibling agents so
+  later ones read the cached prompt prefix instead of re-paying it.
+  `CLAUDE_CODE_WORKFLOW_PREFIX_STAGGER_MS=0` disables the stagger — leave it on
+  unless a stage genuinely needs every sibling to start at once.
 
 ### 5. Agent teams (experimental)
 
@@ -132,6 +151,14 @@ teammates. Note: a subagent definition's `skills:` and `mcpServers:` fields are
 **not** applied when it runs as a teammate — teammates load skills and MCP servers
 from project/user settings like a regular session, so a team-mode skill cannot rely
 on per-agent preloading.
+
+**Teammate models:** the `teammateDefaultModel` setting was **removed in v2.1.234**
+and a leftover value is ignored. Each teammate's model is the first of: the model
+the spawn prompt names for that teammate → the `model` field of the subagent
+definition it was spawned from (`inherit` = the lead's model) →
+`CLAUDE_CODE_SUBAGENT_MODEL` when set to anything but `inherit` → the lead's
+current model. So a team-mode skill that wants a specific teammate model must name
+it in the spawn prompt (or in the definition), not in settings.
 
 Right when: workers must debate, challenge each other, or self-coordinate — 
 competing debugging hypotheses, cross-layer features, adversarial review. Highest
@@ -225,6 +252,18 @@ Pin heavy stages through **custom agent definitions** (`model:`/`effort:` in
 `.claude/agents/<worker>.md`, referenced via `agentType`/`agent`), not through the
 skill's own `model:` field — the skill-level override is turn-scoped and hits every
 stage including cheap ones. Mechanics: `references/agent-authoring.md`.
+
+`CLAUDE_CODE_SUBAGENT_MODEL` sets only the **default** model for subagents,
+teammates, and workflow agents that aren't assigned one another way (since
+v2.1.251; before that it overrode everything). A definition's `model:` field
+— `inherit` included — and a model Claude names at spawn time both take
+precedence, so a pinned worker keeps its pin even in a session that exports the
+variable. Setting it to `inherit` is the same as leaving it unset.
+
+Note also that since v2.1.223 Claude Code **warns** when the subagent model
+requested by a workflow agent, forked skill, slash command, or resumed background
+agent is restricted and the parent model runs instead — treat that warning as a
+signal that the pin didn't take, not as noise.
 
 ## Worked examples
 
