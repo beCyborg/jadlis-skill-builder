@@ -123,8 +123,10 @@ subagents as fallback). Conditional follow-ups on the same screen when relevant:
    runs) — gate with a narrow description and `disallowed-tools` instead.
 2. **Tools** — pre-approve tools (`allowed-tools`) and/or remove tools
    (`disallowed-tools` — e.g. `AskUserQuestion` for anything unattended)?
-3. **Enforce** — any must-happen/must-not-happen step? Recommend a skill-scoped
-   hook over prose for hard constraints (`references/frontmatter-reference.md` §6).
+3. **Enforce** — any must-happen/must-not-happen step? Recommend a skill-declared
+   hook over prose for hard constraints, but warn that it outlives the invocation
+   and stays armed for the whole session: `once: true` for a one-shot gate, an
+   exact `matcher`/`if` for a narrow one (`references/frontmatter-reference.md` §6).
 4. **Paths** — should the skill only activate for certain file globs (`paths`)?
 
 ### Stage 5 — Evals

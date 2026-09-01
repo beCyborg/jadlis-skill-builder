@@ -28,6 +28,8 @@ experimental:
 ---
 ```
 
+  Caveat for plugin authors: plugin-shipped agents support only `name`, `description`, `model`, `effort`, `maxTurns`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `isolation` (plugins-reference.md:68) — `experimental` is not on that list, so don't count on `cacheTtl` for an agent that lives *inside* a plugin. It is dependable in project/user agent files.
+
 **Naming (v2.1.218+):** agent names use lowercase letters and hyphens and **cannot contain `:`** — the colon is reserved for plugin-scoped identifiers (`my-plugin:reviewer`). Claude Code doesn't load a file whose agent name contains one and logs the error only to the debug log, so a bad name fails silently from the user's point of view. Also note the Task tool's `mode` parameter is deprecated and ignored as of v2.1.212 — subagents inherit the parent session's permission mode by default; use `permissionMode` in the agent definition instead.
 
 Model-inheritance facts worth knowing when pinning workers:

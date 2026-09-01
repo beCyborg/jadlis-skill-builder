@@ -16,6 +16,12 @@ from pathlib import Path
 
 from scripts.utils import parse_skill_md
 
+# Combined `description` + `when_to_use` listing cap (references/frontmatter-reference.md §1).
+COMBINED_MAX = 1536
+# Below this many characters left for the description there is nothing useful to
+# write, so the loop refuses to start rather than chasing an impossible budget.
+MIN_DESCRIPTION_BUDGET = 100
+
 
 def _call_claude(prompt: str, model: str | None, timeout: int = 300) -> str:
     """Run `claude -p` with the prompt on stdin and return the text response.
@@ -68,7 +74,18 @@ def improve_description(
     # The 1,536-char cap is on `description` + `when_to_use` combined.
     when_to_use = (when_to_use or "").strip()
     _wtu_cost = len(when_to_use) + 1 if when_to_use else 0
-    budget = 1536 - _wtu_cost
+    budget = COMBINED_MAX - _wtu_cost
+
+    # Floor: with fewer than MIN_DESCRIPTION_BUDGET characters left there is no
+    # description worth writing, and a negative/near-zero budget makes the
+    # shorten-retry unsatisfiable — so fail loudly instead of burning claude calls.
+    if _wtu_cost >= COMBINED_MAX - MIN_DESCRIPTION_BUDGET:
+        raise ValueError(
+            f"when_to_use is too long to optimize a description against: it uses "
+            f"{len(when_to_use)} of the 1,536 combined characters, leaving {budget} "
+            f"for the description (need at least {MIN_DESCRIPTION_BUDGET}). "
+            f"Shorten when_to_use first, then re-run."
+        )
 
     def _combined_len(desc: str) -> int:
         return len(desc) + _wtu_cost
@@ -179,29 +196,28 @@ Please respond with only the new description text in <new_description> tags, not
         "char_count": len(description),
         "when_to_use_char_count": len(when_to_use),
         "combined_char_count": _combined_len(description),
-        "over_limit": _combined_len(description) > 1536,
+        "over_limit": _combined_len(description) > COMBINED_MAX,
     }
 
     # Safety net: if description + when_to_use blew past the 1,536-char listing
     # limit, make one fresh single-turn call that quotes the too-long version and
     # asks for a shorter rewrite. (The old SDK path did this as a true multi-turn;
     # `claude -p` is one-shot, so we inline the prior output into the new prompt.)
-    if _combined_len(description) > 1536:
+    if _combined_len(description) > COMBINED_MAX:
+        # Compact by design: re-embedding the full prompt (which carries the whole
+        # SKILL.md body) costs ~30K characters for a pure length edit. The rewrite
+        # only needs the text, the budget and the when_to_use cost.
         wtu_note = (
-            f" The skill's existing `when_to_use` field already uses "
-            f"{len(when_to_use)} of those characters, so the description itself "
-            f"must fit in {budget}."
+            f" The skill's `when_to_use` field already uses {len(when_to_use)} of "
+            f"those characters."
             if when_to_use else ""
         )
         shorten_prompt = (
-            f"{prompt}\n\n"
-            f"---\n\n"
-            f"A previous attempt produced this description; combined with "
-            f"when_to_use it reaches {_combined_len(description)} characters and "
-            f"exceeds the 1,536-character limit (description + when_to_use is "
-            f"truncated at 1,536 characters in the skill listing).{wtu_note}\n\n"
+            f'This skill description for "{skill_name}" is too long: combined with '
+            f"when_to_use it reaches {_combined_len(description)} characters, over the "
+            f"{COMBINED_MAX}-character skill-listing limit.{wtu_note}\n\n"
             f'"{description}"\n\n'
-            f"Rewrite it to fit in {budget} characters while keeping the most "
+            f"Rewrite it to at most {budget} characters while keeping the most "
             f"important trigger words and intent coverage. Respond with only "
             f"the new description in <new_description> tags."
         )
@@ -215,6 +231,19 @@ Please respond with only the new description text in <new_description> tags, not
         transcript["rewrite_char_count"] = len(shortened)
         transcript["rewrite_combined_char_count"] = _combined_len(shortened)
         description = shortened
+
+        # One recheck — the rewrite is not retried again, but it must not pass
+        # silently as if it fit.
+        if _combined_len(description) > COMBINED_MAX:
+            warning = (
+                f"WARNING: after the shorten retry the description is still over the "
+                f"limit ({_combined_len(description)} > {COMBINED_MAX} combined "
+                f"characters; description budget is {budget}). It will be truncated "
+                f"in the skill listing — shorten it by hand."
+            )
+            transcript["rewrite_still_over_limit"] = True
+            transcript["warning"] = warning
+            print(warning, file=sys.stderr)
 
     transcript["final_description"] = description
 

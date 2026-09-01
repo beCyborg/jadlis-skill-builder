@@ -61,7 +61,9 @@ def run_loop(
 ) -> dict:
     """Run the eval + improvement loop."""
     project_root = find_project_root()
-    name, original_description, _, content = parse_skill_md(skill_path)
+    # when_to_use shares the 1,536-char listing cap with the description, so it must
+    # reach improve_description() — otherwise the budget is computed without it.
+    name, original_description, when_to_use, content = parse_skill_md(skill_path)
     current_description = description_override or original_description
 
     # Split into train/test if holdout > 0
@@ -205,6 +207,7 @@ def run_loop(
             model=model,
             log_dir=log_dir,
             iteration=iteration,
+            when_to_use=when_to_use,
         )
         improve_elapsed = time.time() - t0
 

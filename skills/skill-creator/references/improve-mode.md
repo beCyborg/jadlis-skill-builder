@@ -71,7 +71,7 @@ For each iteration (0, 1, 2, ...):
 
 #### Step 1: Execute (3 Parallel Runs)
 
-Spawn 3 executor subagents in parallel (or run sequentially without subagents — see "Without subagents" below). Set the task `in_progress` (activeForm: "Running executors").
+Spawn 3 executor subagents in parallel (or run sequentially without subagents — see "Without subagents" below). If the task tools are available, set the task `in_progress` (activeForm: "Running executors"); otherwise say so in the response text and skip the task call (see `references/task-tracking.md`).
 
 Spawn a subagent for each run with these instructions:
 
@@ -88,7 +88,7 @@ Execute this task:
 
 #### Step 2: Grade Assertions
 
-Spawn grader subagents (or grade inline — see "Without subagents" below). Update `activeForm` to "Grading" (status stays `in_progress`).
+Spawn grader subagents (or grade inline — see "Without subagents" below). If a task is being tracked, update `activeForm` to "Grading" (status stays `in_progress`).
 
 **Purpose**: Grading produces structured pass/fail results for tracking pass rates over iterations. The grader also extracts claims and reads user_notes to surface issues that expectations might miss.
 
@@ -180,7 +180,7 @@ Read `feedback.json` when the user is done. Empty feedback means the output was 
 
 #### Step 5: Update State
 
-Update the task to `completed`. Record results:
+Update the task to `completed` when the task tools are available; otherwise just report the finished iteration in text. Record results:
 
 ```python
 if new_version wins majority:

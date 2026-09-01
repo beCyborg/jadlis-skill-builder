@@ -66,7 +66,7 @@ Practical consequences when authoring:
 - A skill that must travel (claude.ai, Skills API, `.skill` package, Cowork/cloud enablement) may use **only** those six. Everything else — `when_to_use`, `argument-hint`, `arguments`, `disallowed-tools`, `model`, `effort`, `paths`, `shell`, `context`, `agent`, `background`, `disable-model-invocation`, `user-invocable`, `hooks`, `display-name`, `default-enabled`, `fallback` — is Claude Code-only.
 - Claude Code-only **body** features (dynamic context injection, `${CLAUDE_*}` substitutions) don't function in claude.ai chat or through the API either, even though the body itself uploads fine.
 - All six fields load in Claude Code unchanged, so spec-conformant frontmatter needs no fork of the file.
-- `scripts/quick_validate.py` warns when a skill carries non-portable fields; `scripts/package_skill.py` refuses to package such a skill, because packaging *is* the upload path.
+- `scripts/quick_validate.py` warns when a skill carries non-portable fields; `scripts/package_skill.py` refuses to package such a skill by default, because packaging *is* the upload path (`--cc-only` overrides for a Claude-Code-only archive, with a warning).
 
 ---
 
@@ -287,7 +287,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "./scripts/security-check.sh"
+          command: "${CLAUDE_SKILL_DIR}/scripts/security-check.sh"
   PostToolUse:
     - matcher: "Write"
       hooks:
@@ -297,17 +297,25 @@ hooks:
 Perform the requested operations with security checks enabled.
 ```
 
+The hook command is resolved from the session's current directory, not the skill's,
+so a relative path like `./scripts/security-check.sh` exits 127 — a non-blocking
+error that silently disables the gate. Always anchor it with `${CLAUDE_SKILL_DIR}`
+(or `${CLAUDE_PLUGIN_ROOT}` in a plugin).
+
 ### The `once` field
 
 Setting `once: true` removes the hook after its **first successful run**. A run that fails, blocks with exit code 2, or times out leaves the hook in place, so it fires again on the next matching event — `once` is not "at most one execution". This is a **skills-only feature**: it is ignored in settings files and in agent frontmatter.
 
 ```yaml
+`once` is a per-hook field: it belongs next to `type` inside the `hooks` list, not on the matcher entry.
+
+```yaml
 hooks:
   PreToolUse:
     - matcher: "Bash"
-      once: true
       hooks:
         - type: prompt
+          once: true
           prompt: "Confirm this is the first Bash command of the session"
 ```
 
