@@ -4,7 +4,7 @@
   "description": "Tools for creating, improving, evaluating, and benchmarking Claude Code skills.",
   "owner": {
     "name": "beCyborg",
-    "email": "support@jadlis.com"
+    "url": "https://github.com/beCyborg"
   },
   "plugins": [
     {
