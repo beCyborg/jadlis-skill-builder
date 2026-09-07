@@ -31,7 +31,7 @@ pinned worker agent (reuse an existing `*-opus-xhigh` agent when the role fits).
 ## Bilingual triggers
 
 Skill prose for this user is written in Russian (deliverables are Russian; skill
-*text* for skill-creator's own output stays English per fork policy, but
+*text* for skill-builder's own output stays English per fork policy, but
 user-facing skills here are Russian). Descriptions use the house trigger format —
 both languages, explicit boundaries:
 

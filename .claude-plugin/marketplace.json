@@ -8,24 +8,18 @@
   },
   "plugins": [
     {
-      "name": "plugin-creator",
-      "description": "Assemble, validate, release, and migrate Claude Code plugins and plugin marketplaces: scaffold repos to the house GitHub standard, run offline preflight plus claude plugin validate, ship releases (version bump, changelog, tag, GitHub Release, recipient update path), and migrate legacy repos into a consolidated marketplace.",
-      "author": {
-        "name": "beCyborg"
-      },
-      "source": "./plugins/plugin-creator",
-      "category": "development",
-      "homepage": "https://github.com/beCyborg/skill-creator-plugin"
-    },
-    {
-      "name": "skill-creator",
+      "name": "skill-builder",
       "description": "Create new skills, modify and improve existing skills, and measure skill performance. Runs a guided interview to scope new skills and helps choose an orchestration architecture (inline, forked subagent, dynamic workflow, or agent team). Use when users want to create a skill from scratch, update or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.",
       "author": {
         "name": "beCyborg"
       },
       "source": "./",
       "category": "development",
-      "homepage": "https://github.com/beCyborg/skill-creator-plugin"
+      "homepage": "https://github.com/beCyborg/jadlis-skill-builder"
     }
-  ]
+  ],
+  "renames": {
+    "skill-creator": "skill-builder",
+    "plugin-creator": null
+  }
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Validate JSON files produced by skill-creator.
+Validate JSON files produced by skill-builder.
 
 Supports validation for:
 - evals.json: Skill evaluation definitions
@@ -384,7 +384,7 @@ def validate_file(file_path: Path, json_type: str | None = None) -> tuple[bool, 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Validate JSON files produced by skill-creator"
+        description="Validate JSON files produced by skill-builder"
     )
     parser.add_argument("file", type=Path, help="Path to the JSON file to validate")
     parser.add_argument(

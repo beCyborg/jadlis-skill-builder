@@ -1,15 +1,17 @@
 [Русский](README.md) · English
 
-# skill-creator + plugin-creator
+# skill-builder
 
-Two Claude Code plugins for one job: turn recurring work into a skill — a job description for the agent — and package the finished thing into a plugin that installs with one command.
+A Claude Code plugin that turns recurring work into a skill — a job description for the agent.
+
+The plugin used to be called `skill-creator`; it was renamed to `skill-builder` because a plugin of the same name ships in Anthropic's official marketplace, and two plugins with one name share a single namespace.
 
 ## Why
 
 An answer is easy to copy; the work is not. While the instructions live in a chat thread, every run is reinvented: two identical requests produce different output formats, and you have to dictate the destination for the result every single time.
 
-- `skill-creator` writes the skill: an interview about the task, a choice of architecture (inline, subagent, workflow, agent team), a draft, tests, and a description tuned for reliable triggering.
-- `plugin-creator` packages the result: a repo built to the house standard, validation, a tagged release, and migration of legacy repos into a shared marketplace.
+- `skill-builder` writes the skill: an interview about the task, a choice of architecture (inline, subagent, workflow, agent team), a draft, tests, and a description tuned for reliable triggering.
+- `plugin-creator` packages the result: a repo built to the house standard, validation, a tagged release, and migration of legacy repos into a shared marketplace. Since 1.1.0 it lives in its own repository — [jadlis-plugin-creator](https://github.com/beCyborg/jadlis-plugin-creator).
 
 The full idea is spelled out in [“Claude Code as an employee”](docs/employee.en.md).
 
@@ -23,7 +25,7 @@ A skill is a folder with instructions: when to fire, what to do step by step, wh
 <summary>Synthetic example: creating a skill</summary>
 
 ```
-> /skill-creator:skill-creator build a skill for a weekly report digest
+> /skill-builder build a skill for a weekly report digest
 
 Triage: a multi-step procedure with an explicit trigger → a skill fits.
 Question 1/3: where do the reports come from — folder, mail, tracker?
@@ -46,8 +48,8 @@ Next: run the evals and see where the skill missed.
 The main path goes through the `jadlis` hub. Paste this block to your agent:
 
 > You are an installer. Do exactly these steps and nothing more:
-> 1. Bash: `claude plugin marketplace add https://github.com/beCyborg/jadlis-plugins.git`
-> 2. Bash: `claude plugin install skill-creator@jadlis`
+> 1. Bash: `claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git`
+> 2. Bash: `claude plugin install skill-builder@jadlis`
 > 3. Bash: `claude plugin install plugin-creator@jadlis`
 > 4. Bash: `claude plugin list`
 > 5. Tell me: which two plugins appeared in the list and at which versions.
@@ -55,55 +57,54 @@ The main path goes through the `jadlis` hub. Paste this block to your agent:
 By hand — the same commands:
 
 ```bash
-claude plugin marketplace add https://github.com/beCyborg/jadlis-plugins.git
-claude plugin install skill-creator@jadlis
+claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
+claude plugin install skill-builder@jadlis
 claude plugin install plugin-creator@jadlis
 ```
 
-Alternative — this repository's own marketplace, no hub:
+Alternative — this repository's own marketplace, no hub (it carries `skill-builder` only):
 
 ```bash
-claude plugin marketplace add https://github.com/beCyborg/skill-creator-plugin.git
-claude plugin install skill-creator@skill-creator-plugin
-claude plugin install plugin-creator@skill-creator-plugin
+claude plugin marketplace add https://github.com/beCyborg/jadlis-skill-builder.git
+claude plugin install skill-builder@skill-creator-plugin
 ```
 
 ## Usage
 
 Three scenarios, as commands:
 
-1. A new skill out of recurring work: `/skill-creator:skill-creator build a skill for <task>` — interview, draft, test prompts.
-2. Measuring and fixing an existing skill: `/skill-creator:skill-creator run evals for ~/skills/<name>` — run, grade, analyse failures, apply the fix.
-3. Packaging and shipping: `/plugin-creator:plugin-creator package ~/skills/<name> as a plugin`, then `/plugin-creator:plugin-creator release the plugin` — version bump, changelog, tag, GitHub Release.
+1. A new skill out of recurring work: `/skill-builder build a skill for <task>` — interview, draft, test prompts.
+2. Measuring and fixing an existing skill: `/skill-builder run evals for ~/skills/<name>` — run, grade, analyse failures, apply the fix.
+3. Packaging and shipping (a separate plugin): `/plugin-creator package ~/skills/<name> as a plugin`, then `/plugin-creator release the plugin` — version bump, changelog, tag, GitHub Release.
 
-Mode-by-mode detail for plugin-creator: [plugins/plugin-creator/README.en.md](plugins/plugin-creator/README.en.md).
+Mode-by-mode detail for plugin-creator lives in its own repository: [jadlis-plugin-creator](https://github.com/beCyborg/jadlis-plugin-creator).
 
 ## Limits and cost
 
-- No API keys and no paid services: both plugins run on the Claude Code subscription.
+- No API keys and no paid services: the plugin runs on the Claude Code subscription.
 - Benchmark mode runs every eval 3 times per configuration and always adds a no-skill baseline — quota use scales with the number of configurations (tag `skill-creator--v1.8.1`).
 - Benchmark needs subagents; where they are unavailable only Eval mode works, one eval at a time.
-- The split of roles is strict: skill-creator does not publish plugins, plugin-creator does not write skill content.
+- The split of roles is strict: `skill-builder` does not publish plugins, `plugin-creator` does not write skill content.
 - plugin-creator shells out to `git`, `gh` and `claude plugin` — an authenticated GitHub CLI is required.
 
 ## Plugins
 
 | Plugin | What it does | Version | Docs |
 |---|---|---|---|
-| `skill-creator` | Creating, improving, evaluating and benchmarking skills; description optimization for triggering | 1.8.1 | this file, [CHANGELOG](CHANGELOG.md) |
-| `plugin-creator` | Assembling, validating, releasing and migrating plugins and marketplaces | 1.0.2 | [README](plugins/plugin-creator/README.en.md), [CHANGELOG](plugins/plugin-creator/CHANGELOG.md) |
+| `skill-builder` | Creating, improving, evaluating and benchmarking skills; description optimization for triggering | 1.9.0 | this file, [CHANGELOG](CHANGELOG.md) |
+| `plugin-creator` | Assembling, validating, releasing and migrating plugins and marketplaces (separate repository) | 1.1.0 | [jadlis-plugin-creator](https://github.com/beCyborg/jadlis-plugin-creator) |
 
 ## Update
 
 Third-party marketplaces have auto-update off by default — update by hand:
 
 ```bash
-claude plugin update skill-creator@jadlis
+claude plugin update skill-builder@jadlis
 claude plugin update plugin-creator@jadlis
 ```
 
-From this repo's own marketplace — the same commands with the `@skill-creator-plugin` suffix.
+From this repo's own marketplace — `claude plugin update skill-builder@skill-creator-plugin`. Existing `skill-creator@skill-creator-plugin` installs migrate on their own: `marketplace.json` carries a `renames` entry.
 
 ## License
 
-Apache-2.0, [LICENSE](LICENSE). `skill-creator` is based on Anthropic's skill of the same name, extended to the house standard.
+Apache-2.0, [LICENSE](LICENSE). `skill-builder` is a fork of Anthropic's official `skill-creator` skill, extended to the house standard.

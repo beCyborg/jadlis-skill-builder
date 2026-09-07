@@ -96,4 +96,4 @@ The padlock and keys are real. The dial with no markings is the honest part of t
 
 Build your first skill out of the work you are doing by hand for the third time in a row. The rest arrives as needed: a hook after the first expensive miss, a memory file after the first repeated mistake, an adapter once copying data by hand stops being enough.
 
-This repository covers two of those steps: [skill-creator](../README.en.md) writes the instructions, [plugin-creator](../plugins/plugin-creator/README.en.md) packages them into a plugin that installs with one command.
+This stack covers two of those steps: [skill-builder](../README.en.md) writes the instructions, [plugin-creator](https://github.com/beCyborg/jadlis-plugin-creator) packages them into a plugin that installs with one command.

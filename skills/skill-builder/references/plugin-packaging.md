@@ -2,7 +2,7 @@
 
 > Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
 
-`python -m scripts.package_skill` produces a `.skill` file — the quick path for handing one skill to one person. For anything that needs to be **shared with teammates, versioned, updated over time, or published**, wrap the skill in a **plugin** inside a **marketplace**. (This skill-creator ships exactly that way.)
+`python -m scripts.package_skill` produces a `.skill` file — the quick path for handing one skill to one person. For anything that needs to be **shared with teammates, versioned, updated over time, or published**, wrap the skill in a **plugin** inside a **marketplace**. (This skill ships exactly that way.)
 
 ## Standalone vs plugin — which to use
 
@@ -54,7 +54,7 @@ A plugin with a **root-level `SKILL.md`**, no `skills/` subdir **and no `skills`
 - `$schema` is `https://json.schemastore.org/claude-code-plugin-manifest.json` (v2.1.120+). Claude Code **ignores it at load time** — it is for editor autocomplete only, not a CI gate (the published schemas lag the CLI).
 - `themes` and `monitors` must be nested under `"experimental": { ... }` (top-level still works but warns).
 - `defaultEnabled: false` (v2.1.154+) ships the plugin disabled; users enable it with `/plugin` or `claude plugin enable`. Dependencies of enabled plugins stay enabled automatically. A `defaultEnabled` in the marketplace entry overrides the manifest value.
-- `userConfig` declares values Claude Code prompts for at enable time, substituted as `${user_config.KEY}` and exported to hooks as `CLAUDE_PLUGIN_OPTION_<KEY>`. Shell-executed fields reject the substitution. Full canon: plugin-creator reference (in this repo, upcoming).
+- `userConfig` declares values Claude Code prompts for at enable time, substituted as `${user_config.KEY}` and exported to hooks as `CLAUDE_PLUGIN_OPTION_<KEY>`. Shell-executed fields reject the substitution. Full canon: the `plugin-creator` plugin (repo `beCyborg/jadlis-plugin-creator`).
 - `dependencies` declares plugin→plugin requirements, optionally with semver ranges resolved against git tags named `{plugin-name}--v{version}` — without those tags a constraint can't resolve.
 - Plugin **agents** support only `name`, `description`, `model`, `effort`, `maxTurns`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `isolation` (`"worktree"`). `hooks`, `mcpServers`, and `permissionMode` are **not supported** in plugin-shipped agents, for security reasons.
 
@@ -112,4 +112,4 @@ Use `python -m scripts.quick_validate <skill-dir>` for a fast local SKILL.md smo
 
 ---
 
-> Deep marketplace operations (sources, headersHelper, renames, release channels, org distribution) are covered by the plugin-creator plugin in this repo; this file stays a minimal packaging guide.
+> Deep marketplace operations (sources, headersHelper, renames, release channels, org distribution) are covered by the `plugin-creator` plugin (repo `beCyborg/jadlis-plugin-creator`); this file stays a minimal packaging guide.

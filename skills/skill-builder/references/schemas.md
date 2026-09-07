@@ -2,7 +2,7 @@
 
 > Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
 
-This document defines the JSON schemas used by skill-creator.
+This document defines the JSON schemas used by skill-builder.
 
 ## Working with JSON Files
 

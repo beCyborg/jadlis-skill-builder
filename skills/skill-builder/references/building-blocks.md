@@ -1,6 +1,6 @@
 # Building Blocks
 
-The skill-creator operates on composable building blocks. Each has well-defined inputs and outputs.
+The skill-builder operates on composable building blocks. Each has well-defined inputs and outputs.
 
 | Building Block | Input | Output | Agent |
 |-----------|-------|--------|-------|

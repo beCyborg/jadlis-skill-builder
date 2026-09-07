@@ -1,4 +1,18 @@
-# Changelog — skill-creator
+# Changelog — skill-builder
+
+## [1.9.0] — 2026-09-07 — переименование в `skill-builder`, репо `jadlis-skill-builder` / rename to `skill-builder`, repo `jadlis-skill-builder`
+### Для человека
+- Плагин переименован в `skill-builder`: одноимённый плагин есть в официальном маркетплейсе Anthropic, а два плагина с одним именем делят один неймспейс — команда стала `/skill-builder`.
+- Репозиторий переименован в `jadlis-skill-builder`, плагин раздаётся через маркетплейс `jadlis`; `plugin-creator` уехал в собственный репозиторий `jadlis-plugin-creator`.
+- Уже сделанные установки продолжают работать: в легаси-`marketplace.json` прописан `renames`.
+### For agents
+- Changed: `.claude-plugin/plugin.json` — `name` skill-creator → skill-builder, version 1.8.1 → 1.9.0, `displayName` added, `homepage`/`repository` → `https://github.com/beCyborg/jadlis-skill-builder`.
+- Changed: `skills/skill-creator/` → `skills/skill-builder/`; entry skill frontmatter `name: skill-builder`. Command `/skill-creator:skill-creator` → `/skill-builder`.
+- Changed: `.claude-plugin/marketplace.json` — marketplace `name` stays `skill-creator-plugin` (legacy installs), single entry `skill-builder` → `./`, `"renames": {"skill-creator": "skill-builder", "plugin-creator": null}`.
+- Removed: `plugins/plugin-creator/` — the plugin now lives in `beCyborg/jadlis-plugin-creator` at 1.1.0 (no diverging copies).
+- Changed: CI — `.github/workflows/plugin-validate.yml` replaced by `.github/workflows/ci.yml` calling `beCyborg/jadlis-start/.github/workflows/plugin-ci.yml@main` with `mode: marketplace`, `forbid-mermaid: false`.
+- Changed: `README.md` / `README.en.md` / `docs/employee*.md` / `CLAUDE.md` — install via `claude plugin install skill-builder@jadlis` from `https://github.com/beCyborg/jadlis-start.git`, plugin-creator links point at its own repo.
+- Migration: `claude plugin marketplace update` picks up the rename automatically; a fresh install is `claude plugin install skill-builder@jadlis`.
 
 ## [1.8.1] — 2026-09-06 — README RU/EN, docs/employee, формат CHANGELOG, gitleaks в CI / bilingual READMEs, docs/employee, changelog format, gitleaks in CI
 ### Для человека
