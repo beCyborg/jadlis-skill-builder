@@ -1,18 +1,18 @@
-# skill-creator-plugin — конвенции репо
+# jadlis-skill-builder — конвенции репо
 
-Два плагина в одном маркетплейсе `skill-creator-plugin`: `skill-creator` лежит в корне (root-as-plugin, скиллы в `skills/`), `plugin-creator` — в `plugins/plugin-creator/`. Плагины раздаются и через хаб `jadlis`. Эти правила читает агент, который правит и коммитит репозиторий.
+Один плагин `skill-builder` в корне (root-as-plugin, скиллы в `skills/`); раздаётся через хаб `jadlis`, легаси-`marketplace.json` со `skill-creator-plugin` оставлен ради старых установок (`renames`). `plugin-creator` с 1.1.0 живёт в отдельном репозитории `jadlis-plugin-creator`. Эти правила читает агент, который правит и коммитит репозиторий.
 
 ## Коммиты
 
-- Тема — Conventional Commits на английском: `type(scope): subject`, ≤72 символа. `scope` = `skill-creator`, `plugin-creator`, `docs`, `ci` или `repo`.
+- Тема — Conventional Commits на английском: `type(scope): subject`, ≤72 символа. `scope` = `skill-builder`, `docs`, `ci` или `repo`.
 - Тело двухслойное: `Что изменилось:` — 1–3 предложения по-русски для человека; `Details (for agents):` — буллеты `Added / Changed / Removed / Migration / Refs` с путями.
 - Без строк атрибуции (`Co-Authored-By` и подобных).
 
 ## Релизы
 
-- Версия живёт только в `plugin.json` (`.claude-plugin/plugin.json` для skill-creator, `plugins/plugin-creator/.claude-plugin/plugin.json` для plugin-creator); в записи маркетплейса версии нет.
+- Версия живёт только в `.claude-plugin/plugin.json`; в записи маркетплейса версии нет.
 - Бамп — в том же коммите, что и изменение: версия = ключ кеша обновлений. Правка README внутри папки плагина тоже считается изменением плагина; docs-only → patch.
-- Тег `{plugin}--v{X.Y.Z}`: `claude plugin tag --push .` для skill-creator, `claude plugin tag --push plugins/plugin-creator` для второго.
+- Тег `{plugin}--v{X.Y.Z}`: `claude plugin tag --push .`.
 - GitHub Release поверх тега: заголовок и тело — из `CHANGELOG.md` соответствующего плагина.
 - `CHANGELOG.md`: `## [X.Y.Z] — YYYY-MM-DD — <кратко по-русски> / <short EN>`, затем `### Для человека` (≤3 буллета) и `### For agents` (`Added / Changed / Removed / Migration / Breaking`, с путями).
 - Только patch-forward: никаких force-push, переписывания тегов и релизов.
@@ -27,24 +27,23 @@
 
 ## Скрипты проверки
 
-Своих `tools/` в репозитории нет — скрипты берутся из соседнего клона хаба `jadlis-plugins`:
+Своих `tools/` в репозитории нет — скрипты берутся из соседнего клона хаба `jadlis-start`:
 
 ```bash
 python3 ~/jadlis-plugins/tools/readme-parity.py .        # H2-паритет, mermaid, ссылки
 python3 ~/jadlis-plugins/tools/privacy-grep.py .         # ключи, почты, личные пути
 python3 ~/jadlis-plugins/tools/release-notes.py . --title
 claude plugin validate .
-claude plugin validate plugins/plugin-creator
 claude plugin validate .claude-plugin/marketplace.json
 ```
 
 ## Приватность
 
 - В файлах нет ключей, почт, телефонов, путей владельца (`/Users/<имя>` → писать `~`) и упоминаний приватного бэкапа.
-- Перед пушем локально: `gitleaks git .` и `privacy-grep.py`. В CI (`.github/workflows/plugin-validate.yml`) гоняются валидация плагинов, preflight и gitleaks.
+- Перед пушем локально: `gitleaks git .` и `privacy-grep.py`. В CI (`.github/workflows/ci.yml`, переиспользуемый `beCyborg/jadlis-start/.github/workflows/plugin-ci.yml@main`) гоняются валидация плагинов, gitleaks, privacy-grep и README-паритет.
 
 ## Разработка
 
-- Правки только в рабочем клоне `~/skill-creator-plugin`, никогда в `~/.claude/plugins/marketplaces/` — фоновый рефреш стирает их вместе с локальными ветками.
-- Роли не смешивать: содержание скиллов — зона `skill-creator`, упаковка и релизы — `plugin-creator`.
+- Правки только в рабочем клоне, никогда в `~/.claude/plugins/marketplaces/` — фоновый рефреш стирает их вместе с локальными ветками.
+- Роли не смешивать: содержание скиллов — зона `skill-builder`, упаковка и релизы — `plugin-creator` (свой репозиторий).
 - Язык доков — русский (RU-файл первичен), код и идентификаторы — английский.

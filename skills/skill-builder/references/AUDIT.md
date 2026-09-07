@@ -51,8 +51,8 @@ When the fact changes, update the canon first, then every mirror.
 4. `claude plugin validate <marketplace-root> --strict` — zero errors. That run only reads `marketplace.json` plus the `plugin.json` of each entry; it never opens the skill files. Add `claude plugin validate <plugin-dir>` and `claude plugin validate skills/` for frontmatter coverage.
 5. Grep the SYNC registry facts — every mirror consistent with its canon.
 6. Bump the version in `.claude-plugin/plugin.json` — the single source of truth. Do **NOT** duplicate it in the `.claude-plugin/marketplace.json` entry: when both set `version`, `plugin.json` wins silently and the marketplace copy only masks drift.
-7. Commit, push, then tag with `claude plugin tag --push` (convention `{plugin-name}--v{version}`, i.e. `skill-creator--v1.8.0` — the form plugin dependency resolution understands; the old `vX.Y.Z` tags stay as history). Then `claude plugin update skill-creator@skill-creator-plugin`. Never run `/plugin` operations before the push — marketplace autoUpdate can wipe uncommitted edits.
-8. Do ALL editing in a dev clone (`~/skill-creator-plugin`), never in `~/.claude/plugins/marketplaces/skill-creator-plugin/` — the background marketplace refresh resets that clone to origin (it deleted a local *branch* on 2026-09-01; any `claude` start, including headless `claude -p`, can trigger it). Push the working branch early.
+7. Commit, push, then tag with `claude plugin tag --push` (convention `{plugin-name}--v{version}`, i.e. `skill-builder--v1.9.0` — the form plugin dependency resolution understands; the old `vX.Y.Z` tags stay as history). Then `claude plugin update skill-builder@jadlis`. Never run `/plugin` operations before the push — marketplace autoUpdate can wipe uncommitted edits.
+8. Do ALL editing in a dev clone (`~/jadlis-skill-builder`), never in `~/.claude/plugins/marketplaces/<marketplace>/` — the background marketplace refresh resets that clone to origin (it deleted a local *branch* on 2026-09-01; any `claude` start, including headless `claude -p`, can trigger it). Push the working branch early.
 
 ## Rejected decisions (do not re-propose without new evidence)
 
@@ -60,4 +60,4 @@ When the fact changes, update the canon first, then every mirror.
 - **Physical dedup of shared facts** (each number lives in exactly one file): rejected — the 1,536 cap is needed at the point of use; an extra Read per number is a bad trade. The SYNC registry above is the compromise.
 - **Audit markers in all 22 references**: rejected — drifts apart in practice; markers only in the version-dense files listed above.
 - **Strict validator mirroring Claude Code's schema**: rejected (v1.5.0 precedent) — `quick_validate` is an authoring guardrail; `claude plugin validate` is the canon. *Not* the same as `--portable` (v1.8.0): portable mode does not mirror Claude Code's schema — it mirrors the **upload path** (claude.ai / Skills API / packaging), where a non-allowlisted field is a hard error by definition. The default Claude Code mode stays guardrail-soft.
-- **Reverting to the official upstream skill-creator**: upstream frozen since 2026-04-23 and behind this fork.
+- **Reverting to the official upstream `skill-creator`** (Anthropic's marketplace plugin this one is forked from): upstream frozen since 2026-04-23 and behind this fork.

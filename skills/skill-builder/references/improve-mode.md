@@ -76,7 +76,7 @@ Spawn 3 executor subagents in parallel (or run sequentially without subagents â€
 Spawn a subagent for each run with these instructions:
 
 ```
-Read agents/executor.md at: <skill-creator-path>/agents/executor.md
+Read agents/executor.md at: <skill-builder-path>/agents/executor.md
 
 Execute this task:
 - Skill path: workspace/v<N>/skill/
@@ -97,7 +97,7 @@ Spawn grader subagents (or grade inline â€” see "Without subagents" below). If a
 Spawn a subagent with these instructions:
 
 ```
-Read agents/grader.md at: <skill-creator-path>/agents/grader.md
+Read agents/grader.md at: <skill-builder-path>/agents/grader.md
 
 Grade these expectations:
 - Assertions: <list from evals.json>
@@ -130,7 +130,7 @@ For iterations after baseline, use blind comparison:
 Spawn a subagent with these instructions:
 
 ```
-Read agents/comparator.md at: <skill-creator-path>/agents/comparator.md
+Read agents/comparator.md at: <skill-builder-path>/agents/comparator.md
 
 Blind comparison:
 - Eval prompt: <the task that was executed>
@@ -151,7 +151,7 @@ You do NOT know which is old vs new. Judge purely on quality.
 After blind comparison, analyze results. Spawn a subagent with these instructions:
 
 ```
-Read agents/analyzer.md at: <skill-creator-path>/agents/analyzer.md
+Read agents/analyzer.md at: <skill-builder-path>/agents/analyzer.md
 
 Analyze:
 - Winner: <A or B>
@@ -167,7 +167,7 @@ Analyze:
 After grading and analysis, launch the eval viewer so the user can review outputs qualitatively:
 
 ```bash
-nohup python <skill-creator-path>/eval-viewer/generate_review.py \
+nohup python <skill-builder-path>/eval-viewer/generate_review.py \
   <workspace>/v<N>/runs \
   --skill-name "my-skill" \
   --benchmark <benchmark.json path if available> \

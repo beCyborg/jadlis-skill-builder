@@ -104,7 +104,7 @@ echo "{\"executor_start\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > <run-dir>/timi
 **With subagents**: Spawn the `with_skill` AND `without_skill` executors **in the same turn** — don't run with-skill first and come back for the baseline later; launching everything at once means it all finishes around the same time. One executor per configuration, with these instructions:
 
 ```
-Read agents/executor.md at: <skill-creator-path>/agents/executor.md
+Read agents/executor.md at: <skill-builder-path>/agents/executor.md
 
 Execute this eval:
 - Skill path: <workspace>/eval-<id>/<config>/skill/   (omit for without_skill)
@@ -127,7 +127,7 @@ Update `activeForm` to "Grading" (status stays `in_progress`) and run the grader
 **With subagents**: Spawn a grader subagent with these instructions:
 
 ```
-Read agents/grader.md at: <skill-creator-path>/agents/grader.md
+Read agents/grader.md at: <skill-builder-path>/agents/grader.md
 
 Grade these expectations:
 - Assertions: <list from eval_metadata.json>
@@ -155,7 +155,7 @@ Update the task to `completed` (`TaskUpdate(taskId=task_id, status="completed")`
 **Offer the eval viewer.** For anything beyond a single quick run, offer to open the browsable review UI instead of (or in addition to) the text summary — it renders outputs inline and collects per-eval feedback:
 
 ```bash
-nohup python <skill-creator-path>/eval-viewer/generate_review.py <workspace> \
+nohup python <skill-builder-path>/eval-viewer/generate_review.py <workspace> \
   --skill-name "<name>" > /dev/null 2>&1 &
 ```
 
