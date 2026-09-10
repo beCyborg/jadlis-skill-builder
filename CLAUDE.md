@@ -1,6 +1,6 @@
 # jadlis-skill-builder — конвенции репо
 
-Один плагин `skill-builder` в корне (root-as-plugin, скиллы в `skills/`); раздаётся через хаб `jadlis`, легаси-`marketplace.json` со `skill-creator-plugin` оставлен ради старых установок (`renames`). `plugin-creator` с 1.1.0 живёт в отдельном репозитории `jadlis-plugin-creator`. Эти правила читает агент, который правит и коммитит репозиторий.
+Один плагин `jadlis-skill-builder` в корне (root-as-plugin, скиллы в `skills/`); раздаётся через хаб `jadlis`, легаси-`marketplace.json` со `skill-creator-plugin` оставлен ради режима `mode: marketplace` в CI, `renames` пуст — совместимости со старыми именами нет. `plugin-creator` с 1.1.0 живёт в отдельном репозитории `jadlis-plugin-creator`. Эти правила читает агент, который правит и коммитит репозиторий.
 
 ## Коммиты
 
@@ -27,12 +27,12 @@
 
 ## Скрипты проверки
 
-Своих `tools/` в репозитории нет — скрипты берутся из соседнего клона хаба `jadlis-start`:
+Своих `tools/` в репозитории нет — скрипты берутся из соседнего клона хаба `jadlis-hub`:
 
 ```bash
-python3 ~/jadlis-plugins/tools/readme-parity.py .        # H2-паритет, mermaid, ссылки
-python3 ~/jadlis-plugins/tools/privacy-grep.py .         # ключи, почты, личные пути
-python3 ~/jadlis-plugins/tools/release-notes.py . --title
+python3 ~/jadlis-hub/tools/readme-parity.py .        # H2-паритет, mermaid, ссылки
+python3 ~/jadlis-hub/tools/privacy-grep.py .         # ключи, почты, личные пути
+python3 ~/jadlis-hub/tools/release-notes.py . --title
 claude plugin validate .
 claude plugin validate .claude-plugin/marketplace.json
 ```
@@ -40,7 +40,7 @@ claude plugin validate .claude-plugin/marketplace.json
 ## Приватность
 
 - В файлах нет ключей, почт, телефонов, путей владельца (`/Users/<имя>` → писать `~`) и упоминаний приватного бэкапа.
-- Перед пушем локально: `gitleaks git .` и `privacy-grep.py`. В CI (`.github/workflows/ci.yml`, переиспользуемый `beCyborg/jadlis-start/.github/workflows/plugin-ci.yml@main`) гоняются валидация плагинов, gitleaks, privacy-grep и README-паритет.
+- Перед пушем локально: `gitleaks git .` и `privacy-grep.py`. В CI (`.github/workflows/ci.yml`, переиспользуемый `beCyborg/jadlis-hub/.github/workflows/plugin-ci.yml@main`) гоняются валидация плагинов, gitleaks, privacy-grep и README-паритет.
 
 ## Разработка
 

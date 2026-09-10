@@ -7,8 +7,8 @@
 начнёт включаться сам.
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-claude plugin install skill-builder@jadlis
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin install jadlis-skill-builder@jadlis
 ```
 
 Ключей не нужно: плагин живёт на твоей подписке Claude Code. Это форк официального плагина Anthropic
@@ -59,11 +59,11 @@ claude plugin install skill-builder@jadlis
 **а) Текст для вставки агенту.** Скопируй целиком в чат Claude Code:
 
 ```
-Ты — установщик. Поставь на этот Mac плагин skill-builder из маркетплейса jadlis.
+Ты — установщик. Поставь на этот Mac плагин jadlis-skill-builder из маркетплейса jadlis.
 Выполни ровно эти команды, дословно, ничего не сокращая:
-1. claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-2. claude plugin install skill-builder@jadlis
-3. claude plugin list — покажи мне строку про skill-builder и его версию.
+1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+2. claude plugin install jadlis-skill-builder@jadlis
+3. claude plugin list — покажи мне строку про jadlis-skill-builder и его версию.
 Ключи этому плагину не нужны: он работает на подписке Claude Code, ничего вводить не надо.
 Перед каждой командой покажи её мне целиком и дождись «да». Сказал «нет» — не выполняй,
 скажи, что именно пропустил, и иди дальше.
@@ -73,13 +73,13 @@ claude plugin install skill-builder@jadlis
 **б) Команды руками.**
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-claude plugin install skill-builder@jadlis
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin install jadlis-skill-builder@jadlis
 claude plugin list
 ```
 
 Первая команда ничего не ставит — она добавляет маркетплейс. Ставит только вторая, и снимается
-она одной строкой: `claude plugin uninstall skill-builder@jadlis --keep-data`.
+она одной строкой: `claude plugin uninstall jadlis-skill-builder@jadlis --keep-data`.
 
 **в) Короткая команда.** Открой Claude Code в папке, где работаешь, и набери:
 
@@ -130,15 +130,12 @@ Benchmark без субагентов недоступен — там остаё
 
 ```
 claude plugin marketplace update jadlis
-claude plugin update skill-builder@jadlis
+claude plugin update jadlis-skill-builder@jadlis
 claude plugin list
 ```
 
 Переустановка, если что-то встало криво:
 
 ```
-claude plugin uninstall skill-builder@jadlis --keep-data && claude plugin install skill-builder@jadlis
+claude plugin uninstall jadlis-skill-builder@jadlis --keep-data && claude plugin install jadlis-skill-builder@jadlis
 ```
-
-Установки, сделанные под старым именем `skill-creator`, переезжают сами: переименование прописано в
-манифесте маркетплейса и подхватывается при обновлении.
