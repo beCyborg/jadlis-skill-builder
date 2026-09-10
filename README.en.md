@@ -7,8 +7,8 @@ architecture is chosen, a draft is written, test prompts are run against it, and
 reworked until the skill starts firing on its own.
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-claude plugin install skill-builder@jadlis
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin install jadlis-skill-builder@jadlis
 ```
 
 No keys needed: the plugin runs on your Claude Code subscription. It is a fork of Anthropic's
@@ -59,11 +59,11 @@ keeps the registry of facts duplicated across files together with the date of th
 **a) Text to paste to an agent.** Copy the whole thing into a Claude Code chat:
 
 ```
-You are the installer. Install the plugin skill-builder from the jadlis marketplace on this Mac.
+You are the installer. Install the plugin jadlis-skill-builder from the jadlis marketplace on this Mac.
 Run exactly these commands, verbatim, shortening nothing:
-1. claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-2. claude plugin install skill-builder@jadlis
-3. claude plugin list — show me the line about skill-builder and its version.
+1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+2. claude plugin install jadlis-skill-builder@jadlis
+3. claude plugin list — show me the line about jadlis-skill-builder and its version.
 This plugin needs no keys: it runs on the Claude Code subscription, nothing has to be entered.
 Before each command show it to me in full and wait for "yes". If I say "no", do not run it,
 tell me what you skipped, and move on.
@@ -73,13 +73,13 @@ If a command returns an error, stop, show me the output, and do not move to the 
 **b) Commands by hand.**
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-claude plugin install skill-builder@jadlis
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin install jadlis-skill-builder@jadlis
 claude plugin list
 ```
 
 The first command installs nothing — it adds the marketplace. Only the second one installs, and one
-line removes it: `claude plugin uninstall skill-builder@jadlis --keep-data`.
+line removes it: `claude plugin uninstall jadlis-skill-builder@jadlis --keep-data`.
 
 **c) The short command.** Open Claude Code in the folder you work in and type:
 
@@ -134,15 +134,12 @@ first command you keep the version you installed.
 
 ```
 claude plugin marketplace update jadlis
-claude plugin update skill-builder@jadlis
+claude plugin update jadlis-skill-builder@jadlis
 claude plugin list
 ```
 
 Reinstall, if something ended up crooked:
 
 ```
-claude plugin uninstall skill-builder@jadlis --keep-data && claude plugin install skill-builder@jadlis
+claude plugin uninstall jadlis-skill-builder@jadlis --keep-data && claude plugin install jadlis-skill-builder@jadlis
 ```
-
-Installs made under the old name `skill-creator` migrate on their own: the rename is recorded in the
-marketplace manifest and picked up on update.

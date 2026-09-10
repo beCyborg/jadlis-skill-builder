@@ -1,4 +1,19 @@
-# Changelog — skill-builder
+# Changelog — jadlis-skill-builder
+
+## [2.0.0] — 2026-09-10 — плагин переименован в `jadlis-skill-builder` / plugin renamed to `jadlis-skill-builder`
+### Для человека
+- Плагин называется `jadlis-skill-builder`: ставится строкой `claude plugin install jadlis-skill-builder@jadlis`, маркетплейс добавляется из хаба `https://github.com/beCyborg/jadlis-hub`.
+- Короткая команда `/skill-builder` не изменилась; полная форма стала `/jadlis-skill-builder:skill-builder`.
+- Совместимости со старыми именами нет: `renames` в манифесте маркетплейса очищен, установки под прежним именем надо переставить.
+### For agents
+- Changed: `.claude-plugin/plugin.json` — `name` `skill-builder` → `jadlis-skill-builder`, version 1.9.0 → 2.0.0 (`homepage`/`repository` уже указывали на свой репозиторий).
+- Changed: `.claude-plugin/marketplace.json` — запись плагина `skill-builder` → `jadlis-skill-builder`; `renames` → `{}` (было `{"skill-creator": "skill-builder", "plugin-creator": null}`).
+- Changed: `.github/workflows/ci.yml` — reusable workflow `beCyborg/jadlis-start/...` → `beCyborg/jadlis-hub/.github/workflows/plugin-ci.yml@main`.
+- Changed: `README.md` / `README.en.md` — `marketplace add https://github.com/beCyborg/jadlis-start.git` → `.../jadlis-hub`, все `skill-builder@jadlis` → `jadlis-skill-builder@jadlis`, имя плагина в промпте-установщике.
+- Removed: `README.md` / `README.en.md` — финальный абзац про автоматический переезд установок со `skill-creator` (шимов совместимости больше нет).
+- Changed: `CLAUDE.md` — имя плагина, клон хаба и пути скриптов `~/jadlis-plugins/tools/` → `~/jadlis-hub/tools/`, ссылка на reusable workflow, описание пустого `renames`.
+- Changed: `skills/skill-builder/references/AUDIT.md` — пример тега `jadlis-skill-builder--v2.0.0`, `claude plugin update jadlis-skill-builder@jadlis`.
+- Breaking: имя плагина изменилось, старые теги `skill-builder--vX.Y.Z` не подхватываются; папки скиллов и `name: skill-builder` в `SKILL.md` не менялись.
 
 ## [1.9.0] — 2026-09-07 — переименование в `skill-builder`, репо `jadlis-skill-builder` / rename to `skill-builder`, repo `jadlis-skill-builder`
 ### Для человека
