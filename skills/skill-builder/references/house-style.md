@@ -75,6 +75,12 @@ but write all new ones in the comma-string form.
   recommended option first with "(Recommended)" — the `verif` findings interview
   is the reference implementation.
 
+## Run contract
+
+- Every new skill includes the `## Run contract` block (Done when, keep going vs.
+  stop, subagent checks, progress file, final report) — see the `init_skill.py`
+  template.
+
 ## Integration testing
 
 Skills with live external dependencies (MCP servers, CLIs, browser) get a

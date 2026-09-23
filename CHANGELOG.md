@@ -1,5 +1,19 @@
 # Changelog — jadlis-skill-builder
 
+## [2.1.0] — 2026-09-23 — скиллы под гайд Opus 5.5: effort вместо ultrathink, блок Run contract / Opus 5.5 guide alignment: effort over ultrathink, Run contract block
+### Для человека
+- Глубину размышлений скилла теперь задают полем `effort:` во frontmatter, а не словами «ultrathink»/«think hard» в тексте скилла.
+- Каждый новый скилл из шаблона получает блок «Run contract»: когда работа считается сделанной, когда продолжать без вопросов и как выглядит финальный отчёт.
+- Агенты-оценщики больше не просят «объяснить рассуждения» — только коротко обосновать победителя на конкретных примерах.
+### For agents
+- Changed: `skills/skill-builder/SKILL.md`, `skills/skill-builder/references/frontmatter-reference.md` — section «Extended Thinking (ultrathink)» → «Reasoning depth (effort, not ultrathink)»: `ultrathink` is a per-turn user-prompt keyword, thinking is always on for Opus 5.5/Fable, skills set depth via `effort:` (per `docs/model-config.md`).
+- Changed: `skills/skill-builder/references/improve-mode.md` — dropped «take your time and really mull things over».
+- Changed: `skills/skill-builder/agents/comparator.md`, `agents/analyzer.md`, `references/schemas.md`, `scripts/init_json.py` — «Explain your reasoning» → «Justify the winner in 1–3 sentences with specific examples»; JSON keys (`reasoning`, `comparator_reasoning`) unchanged.
+- Added: `skills/skill-builder/scripts/init_skill.py` — `## Run contract` section in `SKILL_TEMPLATE` (Done-when as TODO; `{{WORK_DIR}}` escaped for `.format()`).
+- Added: `skills/skill-builder/references/house-style.md` — «Run contract» rule for every new skill.
+- Changed: `skills/skill-builder/references/skill-writing-craft.md` — report-structure example reordered to Result → «Не удалось подтвердить» → «От тебя:».
+- Changed: `.claude-plugin/plugin.json` version 2.0.0 → 2.1.0.
+
 ## [2.0.0] — 2026-09-10 — плагин переименован в `jadlis-skill-builder` / plugin renamed to `jadlis-skill-builder`
 ### Для человека
 - Плагин называется `jadlis-skill-builder`: ставится строкой `claude plugin install jadlis-skill-builder@jadlis`, маркетплейс добавляется из хаба `https://github.com/beCyborg/jadlis-hub`.

@@ -253,9 +253,9 @@ Skills can embed shell command output directly into their content at load time. 
 
 **Note:** If `disableSkillShellExecution: true` is set in settings, `` !`command` `` placeholders in user/project/plugin/additional-directory skills are replaced with `[shell command execution disabled by policy]`. Bundled and managed skills are exempt. Warn users if their skill relies on dynamic context.
 
-### Extended Thinking (ultrathink)
+### Reasoning depth (effort, not ultrathink)
 
-Include the word "ultrathink" anywhere in skill content to enable extended thinking mode. See `references/frontmatter-reference.md` for details.
+`ultrathink` in a user prompt asks for deeper reasoning on that one turn (a Claude Code keyword; "think hard" is plain text). On Opus 5.5 and Fable thinking is always on — for a skill, set depth with `effort:` in frontmatter, not with prompt lines. See `references/frontmatter-reference.md` for details.
 
 ### Skills as Subagents
 

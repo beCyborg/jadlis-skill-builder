@@ -44,11 +44,11 @@ Prefer using the imperative form in instructions.
 **Defining output formats** - You can do it like this:
 ```markdown
 ## Report structure
-ALWAYS use this exact template:
+Use this exact template:
 # [Title]
-## Executive summary
-## Key findings
-## Recommendations
+## Result
+## Не удалось подтвердить — what, and where it was looked for
+**От тебя:** — only when the user must do or decide something
 ```
 
 **Examples pattern** - It's useful to include examples. You can format them like this (but if "Input" and "Output" are in the examples you might want to deviate a little):

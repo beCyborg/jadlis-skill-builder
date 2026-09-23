@@ -182,9 +182,9 @@ git status --short
 
 To disable shell execution in skills from user, project, plugin, or additional-directory sources, set `"disableSkillShellExecution": true` in settings. Each command is replaced with `[shell command execution disabled by policy]`. Bundled and managed skills are not affected. Most useful in managed settings where users cannot override it.
 
-### Extended Thinking (ultrathink)
+### Reasoning depth (effort, not ultrathink)
 
-Include the word **"ultrathink"** anywhere in your skill content to enable extended thinking mode. This gives Claude a larger thinking budget for complex reasoning tasks. Use for skills that require deep analysis, multi-step planning, or complex code review.
+`ultrathink` in a user prompt asks for deeper reasoning on that one turn: Claude Code recognizes the keyword and adds an in-context instruction, while the effort level sent to the API stays unchanged. It is a Claude Code keyword only — "think", "think hard" and "think more" pass through as plain prompt text. On Opus 5.5 and Fable thinking is always on and cannot be turned off; the model decides per step how much to think based on the effort level. For a skill, set depth with `effort:` in frontmatter (it overrides the session level while the skill is active, but not `CLAUDE_CODE_EFFORT_LEVEL`; `maxEffortLevel` still caps it), not with "ultrathink"/"think hard" lines in the body.
 
 ---
 

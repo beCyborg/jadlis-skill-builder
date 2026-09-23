@@ -99,7 +99,7 @@ Write a JSON file with this structure:
     "winner": "A",
     "winner_skill": "path/to/winner/skill",
     "loser_skill": "path/to/loser/skill",
-    "comparator_reasoning": "Brief summary of why comparator chose winner"
+    "comparator_reasoning": "Justify the comparator's choice of winner in 1–3 sentences with specific examples"
   },
   "winner_strengths": [
     "Clear step-by-step instructions for handling multi-page documents",

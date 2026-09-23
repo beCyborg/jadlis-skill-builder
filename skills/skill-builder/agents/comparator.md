@@ -175,7 +175,7 @@ If no expectations were provided, omit the `expectation_results` field entirely.
 ## Field Descriptions
 
 - **winner**: "A", "B", or "TIE"
-- **reasoning**: Clear explanation of why the winner was chosen (or why it's a tie)
+- **reasoning**: Justify the winner (or the tie) in 1–3 sentences with specific examples from the outputs
 - **rubric**: Structured rubric evaluation for each output
   - **content**: Scores for content criteria (correctness, completeness, accuracy)
   - **structure**: Scores for structure criteria (organization, formatting, usability)
@@ -199,5 +199,5 @@ If no expectations were provided, omit the `expectation_results` field entirely.
 - **Be decisive**: Choose a winner unless outputs are genuinely equivalent.
 - **Output quality first**: Assertion scores are secondary to overall task completion.
 - **Be objective**: Don't favor outputs based on style preferences; focus on correctness and completeness.
-- **Explain your reasoning**: The reasoning field should make it clear why you chose the winner.
+- **Justify the winner**: In the `reasoning` field, justify the winner in 1–3 sentences with specific examples.
 - **Handle edge cases**: If both outputs fail, pick the one that fails less badly. If both are excellent, pick the one that's marginally better.

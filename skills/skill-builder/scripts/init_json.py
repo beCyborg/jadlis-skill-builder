@@ -172,7 +172,7 @@ TEMPLATES = {
 
     "comparison": {
         "winner": "A",
-        "reasoning": "Explanation of why the winner was chosen",
+        "reasoning": "Justify the winner in 1-3 sentences with specific examples",
         "rubric": {
             "A": {
                 "content": {
