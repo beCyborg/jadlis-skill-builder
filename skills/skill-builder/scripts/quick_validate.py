@@ -170,8 +170,9 @@ def validate_frontmatter(frontmatter, dir_name=None, portable=False):
     # name is optional: the skill falls back to the directory name
     if 'name' not in frontmatter:
         warnings.append(
-            "No 'name' in frontmatter — the skill will use the directory name. "
-            "Convention: set name == directory basename."
+            "No 'name' in frontmatter — the command comes from the directory name. "
+            "Set name explicitly; keep it == directory basename if the skill must travel "
+            "(the portable path requires it)."
         )
     else:
         name = frontmatter.get('name')
@@ -232,8 +233,36 @@ def validate_frontmatter(frontmatter, dir_name=None, portable=False):
                         f"Skills spec caps it at {NAME_MAX} — over that the skill won't upload or package."
                     )
                 # No name != dir_name warning here: in a personal or project skill
-                # `name` is only a display label, and in a plugin skill replacing the
-                # command's last segment is the documented pattern.
+                # `name` sets the command and the directory name ALSO invokes the skill
+                # (skills.md "How a skill gets its command name"; checked by hand on
+                # v2.1.287), and in a plugin skill replacing the command's last segment
+                # is the documented pattern. Only the portable path requires equality.
+
+    # Reserved and side-effect names (skills.md "Skill folders also follow these
+    # rules" / "Names reserved for synced skills"; changelog 2.1.286 for `verify`).
+    # Warnings in both modes: the script can't tell a plugin skill (where
+    # `anthropic-skills` and `synced` are fine) from a personal/project one.
+    raw_name = frontmatter.get('name')
+    cand = {('name', raw_name.strip()) if isinstance(raw_name, str) else None,
+            ('directory', dir_name) if dir_name and dir_name != raw_name else None} - {None}
+    if dir_name and dir_name.lower() == 'synced':
+        warnings.append(
+            "Directory 'synced' is reserved (claude.ai skills download to "
+            "~/.claude/skills/synced/) — a personal/project skill in it is skipped. Rename it."
+        )
+    for kind, val in sorted(cand):
+        low = val.lower()
+        if low == 'anthropic-skills' or low.startswith('anthropic-skills:'):
+            warnings.append(
+                f"{kind} '{val}' is reserved for skills synced from claude.ai — outside a "
+                f"plugin a skill with this {kind} doesn't load. Rename it."
+            )
+        if low == 'verify':
+            warnings.append(
+                f"{kind} 'verify': when project or user skills include one named `verify`, "
+                f"Claude is told to run it right before every commit (v2.1.286+). "
+                f"Keep the name only if that is intended."
+            )
 
     # In portable mode the three shared fields below bind as hard errors: the
     # upload path rejects them outright, so a warning would green-light an archive
@@ -429,6 +458,15 @@ def _self_test():
          "kebab-case", None, None, True),
         ("name != dirname -> FAIL in portable mode", "description: X.\nname: fancy", "review",
          "folder name", None, None, True),
+        # --- reserved / side-effect names (v2.1.282+, v2.1.286) ---
+        ("anthropic-skills name -> warn", "description: X.\nname: anthropic-skills", "my-skill",
+         None, "reserved for skills synced", None, False),
+        ("anthropic-skills: dir -> warn", "description: X.\nname: my-skill", "anthropic-skills:pdf",
+         None, "reserved for skills synced", None, False),
+        ("synced dir -> warn", "description: X.\nname: my-skill", "Synced",
+         None, "is reserved", None, False),
+        ("verify name -> warn", "description: X.\nname: verify", "verify",
+         None, "before every commit", None, False),
         ("name 70 chars -> warn in CC mode", "description: X.\nname: " + "a" * 70, "a" * 70,
          None, "64", None, False),
         ("name 70 chars -> FAIL in portable mode", "description: X.\nname: " + "a" * 70, "a" * 70,

@@ -2,12 +2,18 @@
 
 Use tasks to track progress on multi-step workflows.
 
-> **Read this first — the task tools are not always there.** Since v2.1.233
-> `TodoWrite`, `TaskCreate`, `TaskGet`, `TaskUpdate`, and `TaskList` are **not
-> available** on Opus 4.8, Sonnet 5, Fable 5, Mythos 5, or later versions of those
-> families unless the user opts in. Those models track multi-step work without a
-> written checklist, and the tool definitions plus reminders cost context, so
-> Claude Code leaves them out — nothing is added to the task list while Claude
+> **Read this first — the task tools are not always there.** Since v2.1.268
+> `TodoWrite`, `TaskCreate`, `TaskGet`, `TaskUpdate`, and `TaskList` are on by
+> default **only on an allowlist**: Claude 3.x models, Opus 4 through 4.7, Sonnet 4
+> through 4.6, and Haiku 4.5. Every other model — Opus 4.8, Opus 5.x, Sonnet 5.x,
+> Fable, and any model ID Claude Code doesn't recognize (a custom name behind an
+> LLM gateway) — gets none of them unless the user opts in
+> (`CLAUDE_CODE_ENABLE_TODO_TOOLS=1`, or naming a tool in `--allowedTools`/`--tools`).
+> Background and cloud sessions get them on every model. A subagent receives them
+> only when the parent session has them, whatever model the subagent runs. Newer
+> models track multi-step work without a written checklist, and the tool
+> definitions plus reminders cost context, so Claude Code leaves them out — nothing
+> is added to the task list while Claude
 > works. **Never write a skill that requires these tools to function.** Treat the
 > task list as optional progress *reporting* and keep the skill's real state
 > somewhere the skill controls (a workspace file, the run directory, the

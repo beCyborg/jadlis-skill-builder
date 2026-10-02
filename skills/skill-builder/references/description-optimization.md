@@ -15,7 +15,14 @@ Before optimizing, get the basics right — these prevent most "my skill never f
 
 ### Naming the skill
 
-The directory name becomes the command, so name it well: prefer the **gerund form** (`processing-pdfs`, `analyzing-spreadsheets`) or a clear noun/action phrase. Avoid vague names (`helper`, `utils`, `tools`), reserved words (`anthropic`, `claude`), and the bundled-skill and built-in command names (`run`, `verify`, `run-skill-generator`, `loop`, `batch`, `simplify`, `code-review`, `debug`, `doctor`, `dataviz`, `design`, `design-sync`, `workflow-authoring`, `claude-api`, `fewer-permission-prompts`, `update-config`, `deep-research`, `init`, `review`, `security-review`, `schedule`) — a collision shadows the built-in. Aliases work the other way round: a local skill shadows a bundled skill's own name but **not** its aliases, so typing `/review` still runs the bundled `/code-review`, never yours, and `checkup` (→ `/doctor`) and `proactive` (→ `/loop`) stay pointed at the built-ins. Naming a skill after an alias therefore buys a name nobody can reach by that alias — avoid those too. Lowercase letters, digits, and hyphens only; keep `name` == directory basename. The 64-character cap comes from the [Agent Skills spec](https://agentskills.io) (which also requires `name` == folder name), not from the Claude Code docs — it binds when the skill is packaged or uploaded, see `references/frontmatter-reference.md` §1.1.
+In a personal or project skill both the frontmatter `name` and the directory name invoke the skill (in a plugin skill, `name` replaces the last command segment), so name both well: prefer the **gerund form** (`processing-pdfs`, `analyzing-spreadsheets`) or a clear noun/action phrase. Avoid vague names (`helper`, `utils`, `tools`), reserved words (`anthropic`, `claude`), and the bundled-skill and built-in command names (`run`, `verify`, `run-skill-generator`, `loop`, `batch`, `simplify`, `code-review`, `debug`, `doctor`, `dataviz`, `design`, `design-sync`, `workflow-authoring`, `claude-api`, `fewer-permission-prompts`, `update-config`, `deep-research`, `init`, `review`, `security-review`, `schedule`) — a collision shadows the built-in. Aliases work the other way round: a local skill shadows a bundled skill's own name but **not** its aliases, so typing `/review` still runs the bundled `/code-review`, never yours, and `checkup` (→ `/doctor`) and `proactive` (→ `/loop`) stay pointed at the built-ins. Naming a skill after an alias therefore buys a name nobody can reach by that alias — avoid those too. Lowercase letters, digits, and hyphens only. Claude Code accepts `name` ≠ directory basename, but keep them equal by default: the 64-character cap and the `name` == folder-name rule come from the [Agent Skills spec](https://agentskills.io), not from the Claude Code docs, and both bind when the skill is packaged or uploaded — see `references/frontmatter-reference.md` §1.1.
+
+**Names that silently don't work:**
+
+- `anthropic-skills`, or any name starting with `anthropic-skills:` — reserved for skills synced from claude.ai. Outside a plugin, a skill folder, a frontmatter `name`, a command file or a saved workflow with that name **doesn't load** (a startup notice names it). A *plugin* named `anthropic-skills` still loads.
+- A skill folder named `synced`, in any capitalization — `~/.claude/skills/synced/` is where claude.ai skills are downloaded, so a skill you author under that name is skipped in the enterprise, personal and project locations.
+
+**A name with side effects:** when the project or user skills include one named `verify`, Claude is told to run it right before every commit (except docs-only and tests-only commits; v2.1.286+). Name a skill `verify` only if that is exactly what you want.
 
 ### Step 1: Generate trigger eval queries
 
@@ -55,6 +62,8 @@ python -m scripts.run_loop \
 ```
 
 This splits evals 60/40 train/test, evaluates trigger rates (3 runs each), calls Claude with extended thinking to propose improvements, and iterates up to 5 times. Best description is selected by test score to avoid overfitting.
+
+**Measurement caveats.** `run_eval.py` checks whether Claude invokes a *synthetic* copy of the skill it registers in a temp directory. The `claude -p` subprocess also sees the installed copy of the same skill and any skills synced from the claude.ai account (v2.1.275+), which compete with the synthetic one — an invocation of the installed copy is not counted, so the trigger rate can read low. For a skill that ships in a plugin, measure triggering with the native eval instead (`references/eval-mode.md` §"Native plugin eval"): a case per natural phrasing with a `tool_used: Skill` grader, `--ablation none`, `max_turns: 2`. Re-run the same suite after each description change.
 
 ### Step 4: Apply the result
 

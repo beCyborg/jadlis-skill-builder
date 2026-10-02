@@ -8,7 +8,7 @@ Unlike Eval mode (which runs individual evals), Benchmark mode:
 - Runs **all evals** (or a user-specified subset)
 - Runs each eval **3 times per configuration** (with_skill and without_skill) for variance
 - Captures **metrics with variance**: pass_rate, time_seconds, tokens
-- Uses the **most capable model** as analyzer to surface patterns and anomalies
+- Uses an **analyzer** pass to surface patterns and anomalies (on the session's model unless the analyzer agent pins one)
 - Produces **persistent, structured output** for cross-run analysis
 
 ## When to Use
@@ -22,7 +22,7 @@ Unlike Eval mode (which runs individual evals), Benchmark mode:
 
 **Always include no-skill baseline.** Every benchmark runs both `with_skill` and `without_skill` configurations. This measures the value the skill adds - without a baseline, you can't know if the skill helps.
 
-**Suggest models for comparison.** If the user wants to compare across models, suggest a couple of commonly available models in your environment. Don't hardcode model names - just recommend what's commonly used and available.
+**Suggest models for comparison.** If the user wants to compare across models, suggest a couple of commonly available models in your environment. Don't hardcode model names - just recommend what's commonly used and available. Pass each one as a **full model ID** (e.g. `claude-opus-5-5`), never an alias: `ANTHROPIC_DEFAULT_*_MODEL` can point `sonnet`/`haiku` at the same model as the session, and the comparison then measures a model against itself. See `references/model-routing.md` §4.
 
 **Run on current model by default.** If the user doesn't specify, run on whatever model is currently active. For cross-model comparison, ask which models they'd like to test.
 

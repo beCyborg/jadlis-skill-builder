@@ -8,25 +8,33 @@ generic references.
 ## Thin skill + workflow core + pinned agents
 
 The house pattern for heavy skills (architecture 4 in
-`references/orchestration-guide.md`), as implemented by `full-research`:
+`references/orchestration-guide.md`), as implemented by the `jadlis-research`
+plugin (repo `~/jadlis-research`; since 2026-09-10 the research stack ships as
+plugins, there are no local `~/.claude/skills/full-research` or
+`~/.claude/workflows/` copies any more):
 
-- **Thin skill** (`~/.claude/skills/full-research/SKILL.md`): Phase A interview +
-  recon, Phase B `Workflow({name: "full-research-core", args: {...}})`, Phase C
-  vault write. All interaction in Phase A; the always-asked first interview
-  question is "what decision will you make based on this?"
-- **Workflow core** (`~/.claude/workflows/full-research-core.js`): deterministic
-  fan-out. Results are **file-mediated**: workers write into a `workDir`, the
-  script returns a small contract object like
+- **Thin skill** (`skills/research/SKILL.md`, invoked as
+  `/jadlis-research:research`): Phase A interview + recon, Phase B
+  `Workflow({scriptPath: "${CLAUDE_PLUGIN_ROOT}/workflows/full-research-core.js", args: {...}})`,
+  Phase C vault write. All interaction in Phase A; the always-asked first
+  interview question is "what decision will you make based on this?"
+- **Workflow core** (`workflows/full-research-core.js`, shipped in the plugin):
+  deterministic fan-out. Results are **file-mediated**: workers write into a
+  `workDir`, the script returns a small contract object like
   `{workDir, status, channelsAnswered, reportPath, ...}` — paths and status, never
   payloads. Args may arrive as a JSON string — normalize with a try/parse guard.
-- **Pinned agents** (`~/.claude/agents/researcher-opus-xhigh.md`,
-  `advisor-opus-xhigh.md`): heavy stages pin `model:`/`effort:` via a custom agent
-  referenced by `agentType`, not via the skill's `model:` field. Worker agents
-  state "не вызывать вручную — промпт целиком приходит от оркестратора" in their
-  description and must not spawn nested subagents or invoke skills.
+- **Pinned agents** (`agents/researcher-opus.md` and the other agents in the same
+  plugin, referenced as `agentType: 'jadlis-research:researcher-opus'`): heavy
+  stages pin `model:`/`effort:` via a custom agent, not via the skill's `model:`
+  field. Effort is no longer part of agent names — it changes more often than the
+  model. Worker agents state "never invoke manually — the whole prompt comes from
+  the orchestrator" in their description and must not spawn nested subagents or
+  invoke skills.
 
 New heavy skills follow this trio: `<skill>/SKILL.md` + `<skill>-core.js` + a
-pinned worker agent (reuse an existing `*-opus-xhigh` agent when the role fits).
+pinned worker agent (reuse an existing pinned worker agent when the role fits).
+Which model and effort to pin per role: `references/model-routing.md`, then the
+personal overlay it points to.
 
 ## Bilingual triggers
 

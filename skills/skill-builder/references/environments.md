@@ -1,6 +1,6 @@
 # Environment Notes: Claude.ai and Cowork
 
-> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
+> Last audited against Claude Code docs: 2026-10-02 (v2.1.287, mirror 934d35c9)
 
 The core loop (draft → test → review → improve) is the same everywhere; only the mechanics change.
 
@@ -31,7 +31,8 @@ A skill that Claude Code syncs down from a claude.ai account is treated as untru
 
 - **No shell execution on the user's machine.** Claude Code never runs a synced skill's `` !`command` `` lines locally, regardless of `disableSkillShellExecution`. Behavior by session: in a **cloud** session the body behaves like a local skill (isolated container); in **Cowork on the desktop** every `!` line is replaced with the `disableSkillShellExecution` placeholder; in **any other local session** the `!` line reaches Claude as literal text, `@` file references are not attached, and `${CLAUDE_PROJECT_DIR}` / `${CLAUDE_SESSION_ID}` are not substituted — all arrive verbatim.
 - **Descriptions are sanitized and labeled**: control characters stripped, angle brackets escaped in the text that reaches Claude, so a description can't imitate Claude Code's internal formatting. Frontmatter is still honored in every session — an `allowed-tools` grant goes through the normal permission flow.
-- **No shadowing**: synced skills no longer shadow local commands or MCP prompts, and a synced skill whose name matches any built-in command is skipped.
+- **No shadowing**: synced skills never shadow another command. A synced skill is reachable as `/<name>` or `/anthropic-skills:<name>`; when a built-in or bundled command, a local skill or command file, a plugin skill, or an MCP prompt already uses `<name>`, the synced skill keeps only the full `/anthropic-skills:<name>` form (v2.1.269+; since v2.1.281 `/skills` explains each one that lost its short name). Names are compared ignoring case, spacing and look-alike compatibility forms.
+- **Reserved namespace**: `anthropic-skills` and every `anthropic-skills:*` name are reserved for synced skills — a local skill folder, frontmatter `name`, command file or saved workflow using them doesn't load (a plugin of that name does). Never name a local skill folder `synced` either (`references/description-optimization.md` §"Naming the skill").
 
 Design rule: a skill meant to be synced must carry its logic in prose and bundled files, never in injected command output.
 

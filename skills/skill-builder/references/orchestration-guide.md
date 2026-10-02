@@ -1,12 +1,49 @@
 # Choosing an Orchestration Architecture
 
-> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
+> Last audited against Claude Code docs: 2026-10-02 (v2.1.287, mirror 934d35c9)
 
 When a new skill involves more than a single pass of inline work — fan-out over many
 items, background execution, scheduled runs, enforcement — the most consequential
 design decision is which execution architecture the skill is built on. Make this
 decision **during the interview, before drafting**, because it shapes the frontmatter,
 the file layout, and what the skill body even says.
+
+## Which form? (decide this before the architecture)
+
+Not every recurring need is a skill. Pick the form by what must happen, then — only
+if the answer is "skill" (or a skill plus something) — pick an architecture below.
+
+| The need | Form | Why / limits | Docs |
+|---|---|---|---|
+| A procedure you keep pasting into chat; Claude or the user triggers it | **Skill** (rule in a skill) | On demand; Claude may skip it — a description is a hint, not a guarantee | mods overview "Compare…" table (`plugins__mods__overview.md:198`); `features-overview.md:42` |
+| Must apply on *every* turn: conventions, facts, "always do X" | **CLAUDE.md** / rules | Loaded every session, no trigger risk | `features-overview.md:40` |
+| A voice, length or format for every reply, or Claude in a non-engineering role | **Output style** | Session-wide, not invoked | `features-overview.md:41` |
+| Block, allow or log an event with a script; must-happen / must-not-happen steps | **Classic (settings) hook** — or `hooks:` in skill frontmatter | Deterministic; stable API; exit 2 blocks on gate events | `plugins__mods__overview.md:198`; architecture 6 below |
+| A pane or band in the UI, a `/command` that runs code with no Claude turn, rewriting a tool call, prompt or request | **Mod** (plugin of in-process handlers) | See mod limits below | `plugins__mods__overview.md:15-23,198` |
+| Claude needs to reach an external system (API, DB, browser) | **MCP server** | Gives Claude tools; a skill can then teach *how* to use them | `plugins__mods__overview.md:198`; `features-overview.md:47` |
+| Keep working until a verifiable condition holds | **`/goal`** (this session) or a **Stop hook** (every session in scope; script or prompt check) | Both fire after every turn; `/goal` adds a fresh evaluator model | `goal.md:18-28` |
+| Isolated heavy work that returns a summary | **Subagent** (architectures 2–3) | Own context; loses `AskUserQuestion` and `Workflow` | `features-overview.md:43`; `sub-agents.md:422-433` |
+| Dozens–hundreds of agents, repeatable orchestration | **Workflow** (architecture 4) | The script holds the plan; no mid-run input | `workflows.md:18-28` |
+
+A plugin can carry a skill, hooks, an MCP server and a mod together, so these
+compose: an MCP server for access, a skill for the procedure, a hook for the hard
+rule.
+
+**Mod limits** — say them when you propose one:
+
+- Requires Claude Code **v2.1.287+** (changelog 2.1.287, "Added Claude Mods").
+- **Fails open.** A handler that throws, times out (10 s of its own running time per
+  event) or returns the wrong shape is skipped and the event proceeds, unless the mod
+  wrote a `.catch` handler (`plugins__mods__events.md:280-283`,
+  `plugins__mods__reference.md:245`). A mod guard is a seatbelt, not a lock — for a
+  hard rule prefer a classic `PreToolUse` hook with `exit 2`.
+- **Not sandboxed.** A mod runs with the permissions of the user who installed it,
+  with the user's access to files, processes and network (`plugins__mods__admin.md:9,84`).
+  Never install a third-party mod unread.
+- **Can't patch skills yet.** The `skill.prompt` event is not delivered as of
+  v2.1.287 (anthropics/claude-code#96831, open) — rewriting a third-party skill's
+  text through a mod doesn't work.
+- Authoring: the bundled `plugin-authoring` skill (`/plugin-authoring`).
 
 ## The seven architectures
 
@@ -38,6 +75,13 @@ the skill needs the full tool set or checkpointed edits. Details:
 Right when: a single heavy, self-contained task whose intermediate output would
 pollute the main context (a big scan, a long report). Not for fan-out — it is one
 fork, not many.
+
+**What a fork can't do.** Every subagent — a `context: fork` skill included — loses
+`AskUserQuestion` and `Workflow` (plus `EnterPlanMode`, `ScheduleWakeup`, and
+`Agent` at the depth limit), even when listed in `tools`. So a forked skill can't
+ask the user anything mid-run and can't launch a saved workflow (architecture 4)
+from inside the fork. Interview first in the main session, or use architecture 3/4
+instead.
 
 **Disambiguation — four unrelated "forks":** `context: fork` (this architecture)
 runs a *skill* in a subagent. The `/fork` command starts a separate background
@@ -97,8 +141,10 @@ or `~/.claude/workflows/`, project wins on a name clash), conventionally named
 - **Phase A (skill, main session):** interview the user, do recon, compute
   parameters — everything requiring judgment or input.
 - **Phase B (workflow):** `Workflow({name: "<skill>-core", args: {...}})` runs the
-  deterministic fan-out — up to 16 concurrent agents, 1,000 per run (Workflow-tool
-  limits, separate from the Agent-tool limits in architecture 3), loops and
+  deterministic fan-out — up to 16 concurrent agents by default (fewer when Claude
+  Code has fewer CPUs, e.g. in a CPU-limited container; `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`
+  1–256, v2.1.269+), 1,000 per run (Workflow-tool limits, separate from the
+  Agent-tool limits in architecture 3), loops and
   conditionals in plain JavaScript, `agent(prompt, {schema})` for validated
   structured output. Workflows run in the background; the skill waits for the
   `<task-notification>` and reads the script's return value. Big intermediate
@@ -109,7 +155,14 @@ or `~/.claude/workflows/`, project wins on a name clash), conventionally named
 Right when: large or unbounded fan-out, work that must be repeatable and
 deterministic in structure, budget-scaled loops. The hard constraint: **a workflow
 accepts no mid-run user input** — only permission prompts can pause it. Anything
-interactive must happen in Phase A or C.
+interactive must happen in Phase A or C. Unlike a subagent fan-out, an interrupted
+run is **resumable in the same session** — the runtime tracks each agent's result.
+
+**Ultracode changes the picture for inline skills.** With ultracode on (`/effort
+ultracode`, the `ultracode` setting, `--effort ultracode`), Claude plans a workflow
+for each substantive task on its own — an inline skill's work may get wrapped in a
+workflow without the skill asking for one, and the `Large workflow` warning and the
+Agent-tool concurrency cap are off for that session.
 
 **Before writing or hand-editing the script, load the bundled `workflow-authoring`
 skill** (`/workflow-authoring`, v2.1.248+). In v2.1.248 the Workflow tool's own
@@ -122,8 +175,9 @@ to still carry the API.
 Environment knobs to be aware of when authoring workflow-backed skills:
 - **Size guideline** (v2.1.202+): `workflowSizeGuideline` is sent to Claude as
   *advice* on agent count — a prompt calling for a different scale still overrides
-  it. Values map to targets: `small` <5, `medium` <15, `large` <50, `unrestricted`
-  no guideline. Default is `medium` since v2.1.219 (earlier: `unrestricted`). Set
+  it. Values map to targets: `small` <5, `medium` <10, `large` <50, `unrestricted`
+  no guideline. Default is `medium` since v2.1.219 (earlier: `unrestricted`), or
+  `small` on a Pro plan from v2.1.271. Set
   it via `/config`, or as a settings-file key (v2.1.219+) — the settings key takes
   precedence and hides the `/config` row.
 - **Large-workflow warning** (v2.1.203+): a run that schedules >25 agents or whose
@@ -149,10 +203,17 @@ other directly instead of reporting to a hub. Requires
 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Since v2.1.178 every session has one
 implicit team — spawn teammates with the Agent tool's `name` parameter; there is no
 setup step (the old `TeamCreate`/`TeamDelete` tools are gone). Practical size: 3–5
-teammates. Note: a subagent definition's `skills:` and `mcpServers:` fields are
-**not** applied when it runs as a teammate — teammates load skills and MCP servers
-from project/user settings like a regular session, so a team-mode skill cannot rely
-on per-agent preloading.
+teammates. Note: a subagent definition's `skills:` field is **never** applied to a
+teammate, and `mcpServers:` only to a split-pane teammate — an in-process teammate
+loads MCP servers from project/user settings like a regular session. A team-mode
+skill cannot rely on per-agent skill preloading.
+
+**Trap for hub-and-spoke skills:** while agent teams are enabled, a subagent that
+Claude *names* when it spawns it launches as a **teammate**, not a subagent — and
+Claude can name subagents on its own. An architecture-3 skill run in a session with
+`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` may therefore get teammates (higher cost,
+different `skills`/MCP rules) without asking for them. Setting the variable to `0`
+turns it back; Claude Code rereads it at each spawn.
 
 **Teammate models:** the `teammateDefaultModel` setting was **removed in v2.1.234**
 and a leftover value is ignored. Each teammate's model is the first of: the model
@@ -210,11 +271,11 @@ signals higher in the list dominate):
 Resolution order:
 
 1. Runs unattended on a schedule → **7**, composed with **3** or **4** for the work.
-2. Needs mid-run user input AND fan-out → **3** (or **5** if peers must talk); never 4.
+2. Needs mid-run user input AND fan-out → **3** (or **5** if peers must talk); never 4, never 2 (a fork has no `AskUserQuestion`).
 3. Large deterministic fan-out (≳8 units, repeatable) → **4**.
 4. Workers must communicate peer-to-peer → **5** if the env flag is on, else **3**.
 5. Small fan-out (2–8, hub-and-spoke) → **3**.
-6. One heavy isolated task → **2**.
+6. One heavy isolated task → **2** — unless it must ask the user mid-run or launch a workflow from inside (a fork can do neither) → keep it in the main session (**1**, or **4** started from the main session).
 7. Otherwise → **1**.
 8. Any must-happen/must-not-happen step, in any of the above → add **6**.
 
@@ -235,8 +296,8 @@ Ported from the Claude Code docs comparison:
 |  | Subagents (3) | Agent teams (5) |
 |---|---|---|
 | Context | Own window; results return to caller | Own window; fully independent |
-| Communication | Report back to main agent only | Teammates message each other directly |
-| Coordination | Main agent manages all work | Shared task list, self-coordination |
+| Communication | Return a result to the caller; subagents Claude named at spawn can also message each other | Teammates message each other directly |
+| Coordination | Main agent manages all work | Self-coordination through messages, plus a shared task list for agents that have the Task tools (see `references/task-tracking.md`) |
 | Best for | Focused tasks where only the result matters | Work requiring discussion and collaboration |
 | Token cost | Lower — results summarized back | Higher — each teammate is a full instance |
 
@@ -255,8 +316,17 @@ fallback.
 
 Pin heavy stages through **custom agent definitions** (`model:`/`effort:` in
 `.claude/agents/<worker>.md`, referenced via `agentType`/`agent`), not through the
-skill's own `model:` field — the skill-level override is turn-scoped and hits every
-stage including cheap ones. Mechanics: `references/agent-authoring.md`.
+skill's own `model:` field — the skill-level override is turn-scoped, hits every
+stage including cheap ones, and on an inline skill rebuilds the prompt cache.
+Mechanics: `references/agent-authoring.md`. Which model and effort per stage, cache
+cost, advisor, full IDs vs aliases: **read `references/model-routing.md`**.
+
+**`CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+) overrides every pin:** Claude Code
+then ignores the `model` field of every subagent definition (built-in Explore/Plan
+included), Claude can't pass a model at spawn, and subagents, teammates and workflow
+agents all run on `CLAUDE_CODE_SUBAGENT_MODEL` (or the main model if only FORCE is
+set). A fork and a `context: fork` skill with `model: inherit` still run on the main
+model. Check what a worker actually runs on with `/tasks`.
 
 `CLAUDE_CODE_SUBAGENT_MODEL` sets only the **default** model for subagents,
 teammates, and workflow agents that aren't assigned one another way (since

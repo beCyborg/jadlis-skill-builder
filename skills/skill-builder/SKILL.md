@@ -62,7 +62,7 @@ See `references/mode-diagrams.md` for detailed visual workflow diagrams.
 
 ## Task Tracking
 
-Use tasks to track progress when the task tools are available (they are off by default on Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 and newer — see the availability section in references/task-tracking.md). See references/task-tracking.md for lifecycle, creation, and stage progression details.
+Use tasks to track progress when the task tools are available (since v2.1.268 they are on by default only on an allowlist of older models — Claude 3.x, Opus 4–4.7, Sonnet 4–4.6, Haiku 4.5 — and off on everything newer or unrecognized; see the availability section in references/task-tracking.md). See references/task-tracking.md for lifecycle, creation, and stage progression details.
 
 ---
 
@@ -107,7 +107,7 @@ Start by understanding the user's intent. The current conversation might already
 
 Create a skill when you keep pasting the same instructions, checklist, or multi-step procedure into chat, or when a section of CLAUDE.md has grown into a procedure rather than a fact.
 
-**Triage first — is this actually a skill?** A skill is on-demand, gated by a decision point Claude can skip, so it fits *discrete, invocable workflows* ("do X, then Y, then verify" — the "would I write a function for it?" test). It is a poor fit for *always-on passive knowledge* (framework/API surface, ever-present conventions, code-style rules) — that belongs in CLAUDE.md/AGENTS.md, which loads every turn with no trigger risk. Practitioner evals repeatedly find description-only skills failing to fire on a large fraction of relevant prompts. So: if the user needs something to apply *every time*, steer it to CLAUDE.md or a hook; reserve the skill format for workflows they (or Claude) explicitly trigger. The two can coexist — a rule can live in CLAUDE.md *and* a review skill can reference it.
+**Triage first — is this actually a skill?** A skill is on-demand, gated by a decision point Claude can skip, so it fits *discrete, invocable workflows* ("do X, then Y, then verify" — the "would I write a function for it?" test). It is a poor fit for *always-on passive knowledge* (framework/API surface, ever-present conventions, code-style rules) — that belongs in CLAUDE.md/AGENTS.md, which loads every turn with no trigger risk. Practitioner evals repeatedly find description-only skills failing to fire on a large fraction of relevant prompts. So: if the user needs something to apply *every time*, steer it to CLAUDE.md or a hook; reserve the skill format for workflows they (or Claude) explicitly trigger. The two can coexist — a rule can live in CLAUDE.md *and* a review skill can reference it. Other non-skill answers — an MCP server (reach an external system), an output style (a voice/format for every reply), a mod (UI pane, instant command, rewriting a tool call), `/goal` or a Stop hook (keep going until a check passes): the "Which form?" table in `references/orchestration-guide.md` maps each need to its form.
 
 1. What should this skill enable Claude to do?
 2. When should this skill trigger? (what user phrases/contexts)
@@ -139,7 +139,7 @@ This creates:
 
 Based on interview, fill in the required fields and relevant optional fields:
 
-- **name**: Display label (kebab-case, max 64 chars). The command you type comes from the **directory name**, not this field — so keep `name` == directory basename. (Exceptions: in a plugin skill, `name` replaces the command's *last segment*, the plugin prefix stays, v2.1.216+; in a plugin-root `SKILL.md`, `name` supplies the final segment.) Every skill is also a slash command (`/<name>`, or `/<plugin>:<name>`) and appears in the `/` menu unless `user-invocable: false`. Check `/skills` for collisions and avoid reserved and built-in command names — the canonical list lives in `references/description-optimization.md` §"Naming the skill".
+- **name**: Command name (kebab-case, max 64 chars). In a personal or project skill, `name` sets the command you type **and** the directory name invokes it too (`deploy-staging/` + `name: deploy` → `/deploy` and `/deploy-staging`). In a plugin skill, `name` replaces the command's *last segment* and the plugin prefix stays (v2.1.216+); in a plugin-root `SKILL.md`, `name` supplies the final segment. Keep `name` == directory basename when the skill must travel — the portable path requires it (§1.1 of `references/frontmatter-reference.md`). Every skill is also a slash command (`/<name>`, or `/<plugin>:<name>`) and appears in the `/` menu unless `user-invocable: false`. Check `/skills` for collisions and avoid reserved and built-in command names — the canonical list lives in `references/description-optimization.md` §"Naming the skill" (it also covers names that silently don't load, and why a project/user skill named `verify` runs before every commit).
 - **description**: What the skill does — this is the primary triggering mechanism. Front-load key use cases: the combined `description` + `when_to_use` text is truncated at **1,536 characters** in the skill listing. Include both what the skill does AND specific contexts for when to use it. Claude tends to "undertrigger" skills — make descriptions a little "pushy" (e.g., "Build dashboards for internal data. Use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'")
 - **when_to_use** *(optional)*: Additional trigger context — phrases, example requests. Appended to `description` in the skill listing and counts toward the 1,536-char cap. Use `description` for WHAT it does and `when_to_use` for WHEN to invoke it.
 
@@ -223,9 +223,9 @@ Once gradable criteria are defined (expectations, success metrics), Claude can:
 
 ### Choosing an Orchestration Architecture
 
-When the skill being created involves more than single-pass inline work — fan-out over many items, background or scheduled runs, parallel file mutation — pick the execution architecture during the interview, before drafting. Seven options: plain inline, forked subagent (`context: fork` — runs in the **background by default** since v2.1.218, with a narrower tool set and no `/rewind` coverage; `background: false` restores foreground semantics), direct subagents (hub-and-spoke), thin skill + saved workflow, agent teams (experimental, env-gated), hooks as a cross-cutting enforcement layer, and scheduled/cron. The constraint that eliminates options fastest: workflows and cron runs accept **no mid-run user input** — anything interactive must happen before the fan-out launches or after it returns.
+When the skill being created involves more than single-pass inline work — fan-out over many items, background or scheduled runs, parallel file mutation — pick the execution architecture during the interview, before drafting. Seven options: plain inline, forked subagent (`context: fork` — runs in the **background by default** since v2.1.218, with a narrower tool set and no `/rewind` coverage; `background: false` restores foreground semantics), direct subagents (hub-and-spoke), thin skill + saved workflow, agent teams (experimental, env-gated), hooks as a cross-cutting enforcement layer, and scheduled/cron. The constraint that eliminates options fastest: workflows and cron runs accept **no mid-run user input** — anything interactive must happen before the fan-out launches or after it returns. A forked skill can't ask either: every subagent loses `AskUserQuestion` and `Workflow`.
 
-See `references/orchestration-guide.md` for frontmatter signatures, the decision matrix, resolution order, and worked examples.
+See `references/orchestration-guide.md` for frontmatter signatures, the decision matrix, resolution order, and worked examples. Where a stage needs its own model or effort, read `references/model-routing.md` before setting `model:`/`effort:` anywhere.
 
 ### Package and Present
 
@@ -255,7 +255,7 @@ Skills can embed shell command output directly into their content at load time. 
 
 ### Reasoning depth (effort, not ultrathink)
 
-`ultrathink` in a user prompt asks for deeper reasoning on that one turn (a Claude Code keyword; "think hard" is plain text). On Opus 5.5 and Fable thinking is always on — for a skill, set depth with `effort:` in frontmatter, not with prompt lines. See `references/frontmatter-reference.md` for details.
+`ultrathink` in a user prompt asks for deeper reasoning on that one turn (a Claude Code keyword; "think hard" is plain text). On Opus 5.5 and Fable thinking is always on — for a skill, set depth with `effort:` in frontmatter, not with prompt lines. See `references/frontmatter-reference.md` for details, and `references/model-routing.md` for choosing the level (and why `model:` on an inline skill costs a cache rebuild while `effort:` usually doesn't).
 
 ### Skills as Subagents
 
@@ -324,6 +324,8 @@ Read references/eval-mode.md      # Complete Eval workflow
 Read references/schemas.md        # JSON output structures
 ```
 
+**Which eval system.** A skill that ships in a **plugin** → the native `claude plugin eval` (isolated runs, built-in no-plugin baseline; `skillOverrides` can't switch plugin skills off for a baseline). A **personal or project** skill → this mode's `evals/evals.json` loop. The two formats don't read each other's files. Recipe for both: `references/eval-mode.md` §"Native plugin eval".
+
 Use Eval mode when:
 - Testing a specific eval case
 - Comparing with/without skill on a single task
@@ -349,7 +351,7 @@ Read references/schemas.md        # JSON output structures
 
 Use Benchmark mode when:
 - "How does my skill perform?" - Understanding overall performance
-- "Compare Sonnet vs Haiku" - Cross-model comparison
+- "Compare two models" - Cross-model comparison (name full model IDs such as `claude-sonnet-5-5`, never aliases — an alias can be redirected by `ANTHROPIC_DEFAULT_*_MODEL` and silently compare a model with itself; `references/model-routing.md`)
 - "Has performance regressed?" - Tracking changes over time
 - "Does the skill add value?" - Validating skill impact
 
@@ -357,7 +359,7 @@ Key differences from Eval:
 - Runs **all evals** (not just one)
 - Runs each **3 times per configuration** for variance
 - Always includes **no-skill baseline**
-- Uses **most capable model** for analysis
+- Analysis runs on the session's model unless an analyzer agent pins one (`references/model-routing.md`)
 
 ---
 
@@ -403,7 +405,8 @@ The eval-viewer/ directory contains the browsable review UI:
 The references/ directory has additional documentation:
 - `references/schemas.md` — JSON structures for evals.json, grading.json, benchmark.json, etc. + frontmatter schema
 - `references/frontmatter-reference.md` — Complete frontmatter field documentation, invocation control, string substitutions, hooks
-- `references/orchestration-guide.md` — Seven execution architectures, decision matrix, subagents vs agent teams, worked examples
+- `references/orchestration-guide.md` — Which form (skill / hook / mod / MCP / output style / `/goal`), seven execution architectures, decision matrix, subagents vs agent teams, worked examples
+- `references/model-routing.md` — Model and effort per stage: source priority, cache cost, advisor pairs, full IDs vs aliases, calibrating effort
 - `references/creation-interview.md` — Adaptive Create interview: triage gate, simple/staged paths, orchestration fork, "just vibe" degradation
 - `references/research-protocol.md` — Two-tier research: local docs mirror always, web/library research on request
 - `references/house-style.md` — Machine-local conventions; read in full at the start of every Create run when present

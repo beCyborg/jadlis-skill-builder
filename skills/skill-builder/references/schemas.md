@@ -1,6 +1,6 @@
 # JSON Schemas
 
-> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
+> Last audited against Claude Code docs: 2026-10-02 (v2.1.287, mirror 934d35c9)
 
 This document defines the JSON schemas used by skill-builder.
 
@@ -49,7 +49,7 @@ Frontmatter is read only when the opening `---` is the file's first line.
 description: string       # [portable] combined with when_to_use, truncated at 1,536 chars. Primary trigger mechanism. Angle brackets are escaped by Claude Code, not rejected — but avoid them.
 
 # Optional - Identity
-name: string              # [portable] display label; defaults to the directory name. In a personal/project skill the COMMAND comes from the directory name and a mismatch is harmless. In a plugin skill under skills/, name replaces the command's LAST SEGMENT and the plugin prefix stays (name: fancy -> /my-plugin:fancy; not doubled if it already carries the prefix, v2.1.246+); in a plugin-root SKILL.md it supplies the whole final segment. Kebab-case + 64-char cap come from the Agent Skills spec (agentskills.io), not skills.md — they bind on the portable path.
+name: string              # [portable] command name; defaults to the directory name. In a personal/project skill name sets the /command AND the directory name also invokes it (name ≠ folder is legal in Claude Code; keep them equal only for the portable path). In a plugin skill under skills/, name replaces the command's LAST SEGMENT and the plugin prefix stays (name: fancy -> /my-plugin:fancy; not doubled if it already carries the prefix, v2.1.246+); in a plugin-root SKILL.md it supplies the whole final segment. Kebab-case + 64-char cap come from the Agent Skills spec (agentskills.io), not skills.md — they bind on the portable path.
 when_to_use: string       # additional trigger context; appended to description (counts toward the 1,536-char cap)
 
 # Optional - Invocation Control
@@ -101,7 +101,7 @@ Variables available in SKILL.md content, replaced at load time:
 | `$N` | Shorthand for `$ARGUMENTS[N]` |
 | `${CLAUDE_SESSION_ID}` | Current session ID |
 | `${CLAUDE_SKILL_DIR}` | Directory containing the skill's SKILL.md file (for plugin skills: the skill's subdirectory, not the plugin root) |
-| `${CLAUDE_EFFORT}` | Current effort level: low/medium/high/xhigh/max (v2.1.120+). Ultracode is not a distinct level — it reports as `xhigh`. |
+| `${CLAUDE_EFFORT}` | Current effort level: low/medium/high/xhigh/max (v2.1.120+). Ultracode is not a level: since v2.1.284 it is a separate toggle that no longer forces `xhigh`, so the variable shows the slider level and says nothing about Ultracode; only `--effort ultracode` / SDK `effortLevel: "ultracode"` also set `xhigh`. |
 | `${CLAUDE_PROJECT_DIR}` | Project root directory — same path hooks receive as `CLAUDE_PROJECT_DIR`. Works in the skill body and in `allowed-tools` rules. (v2.1.196+) |
 | `${CLAUDE_PLUGIN_ROOT}` | Plugin install directory. Plugin skills only; substituted in the body and in `allowed-tools` rules |
 | `${CLAUDE_PLUGIN_DATA}` | Plugin persistent data directory, survives plugin updates. Plugin skills only; same two substitution sites |

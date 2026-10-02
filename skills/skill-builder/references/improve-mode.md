@@ -44,7 +44,7 @@ This task is pretty important (we are trying to create billions a year in econom
    - Use `scripts/init_json.py evals evals/evals.json` to create with correct structure (the output path is required)
 
 4. **Create tasks** for baseline — only if the task tools exist in this session
-   (absent by default on Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 and newer; see
+   (absent by default on every model outside the v2.1.268 allowlist (Claude 3.x, Opus 4–4.7, Sonnet 4–4.6, Haiku 4.5), i.e. on Opus 4.8, Opus 5.x, Sonnet 5.x, Fable and any unrecognized model ID; see
    `references/task-tracking.md`). When they don't, skip straight to step 5 —
    `history.json` is the authoritative record of the runs, not the task list:
 

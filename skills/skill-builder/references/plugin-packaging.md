@@ -1,6 +1,6 @@
 # Distributing a Skill as a Plugin
 
-> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
+> Last audited against Claude Code docs: 2026-10-02 (v2.1.287, mirror 934d35c9)
 
 `python -m scripts.package_skill` produces a `.skill` file — the quick path for handing one skill to one person. For anything that needs to be **shared with teammates, versioned, updated over time, or published**, wrap the skill in a **plugin** inside a **marketplace**. (This skill ships exactly that way.)
 
@@ -56,7 +56,7 @@ A plugin with a **root-level `SKILL.md`**, no `skills/` subdir **and no `skills`
 - `defaultEnabled: false` (v2.1.154+) ships the plugin disabled; users enable it with `/plugin` or `claude plugin enable`. Dependencies of enabled plugins stay enabled automatically. A `defaultEnabled` in the marketplace entry overrides the manifest value.
 - `userConfig` declares values Claude Code prompts for at enable time, substituted as `${user_config.KEY}` and exported to hooks as `CLAUDE_PLUGIN_OPTION_<KEY>`. Shell-executed fields reject the substitution. Full canon: the `plugin-creator` plugin (repo `beCyborg/jadlis-plugin-creator`).
 - `dependencies` declares plugin→plugin requirements, optionally with semver ranges resolved against git tags named `{plugin-name}--v{version}` — without those tags a constraint can't resolve.
-- Plugin **agents** support only `name`, `description`, `model`, `effort`, `maxTurns`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `isolation` (`"worktree"`). `hooks`, `mcpServers`, and `permissionMode` are **not supported** in plugin-shipped agents, for security reasons.
+- Plugin **agents** support only `name`, `description`, `model`, `effort`, `maxTurns`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, `isolation` (`"worktree"` only), `color`, and the `cacheTtl` key of `experimental`. `permissionMode`, `hooks`, `mcpServers`, and `initialPrompt` are **ignored** in plugin-shipped agents — ship hooks and MCP servers as plugin components instead. An agent file whose frontmatter doesn't parse still loads, with every field ignored and a generic description.
 
 ## Path variables
 
@@ -97,11 +97,20 @@ claude plugin validate <path>     # primary validator
 - Pointed at a **marketplace directory**: schema errors, **duplicate plugin names**, **source path traversal**, and — for every entry whose `source` is a local path — that plugin's own `plugin.json`, with a warning when the entry's `version` disagrees with it (findings prefixed `plugins[2] plugin.json →`). It does **not** open the plugins' skill/agent/command/hook files.
 - Pointed at a **plugin directory**: `plugin.json`, `hooks/hooks.json`, and the `skills`, `agents`, and `commands` directories **at the plugin root** only. A root-level `SKILL.md` is **not** checked here — to check it, run again naming the containing directory, which must literally be called `skills`. For paths set through component path fields, only *existence* is checked; the files are not read. Symlinks are **not** followed (linked dirs and entries are skipped with a warning; naming a symlinked dir is an error).
 - Pointed at a **bare skills/agents/commands directory** (`claude plugin validate .claude/skills`, `~/.claude`, `./my-plugin/agents`) it checks every file there — the way to catch unparseable frontmatter in a plugin that has no manifest yet. Requires v2.1.233+.
-- Add `--strict` in CI to turn **all** warnings into errors before you publish. A clean run prints `Validation passed`.
+- Add `--strict` in CI to turn **all** warnings into errors before you publish, and `--json` (v2.1.259+) for a machine-readable report. A clean run prints `Validation passed`.
+- Since v2.1.281 it also checks MCP servers (`.mcp.json` entries that would be silently dropped at load, undeclared `${user_config.*}` references, insecure URLs) and warns when a shell-form hook leaves `${CLAUDE_PLUGIN_ROOT}` unquoted (breaks on paths with spaces).
 - As of v2.1.221, validation also warns when a marketplace or plugin name would be rejected by Claude Desktop's managed marketplace sync — heed these if the plugin may ever be distributed through managed settings.
 - `claude plugin details <name>` shows the component inventory plus projected always-on / on-invoke token cost — useful before shipping a large plugin.
 
 Use `python -m scripts.quick_validate <skill-dir>` for a fast local SKILL.md smoke check during authoring.
+
+## Test behaviour: `claude plugin eval` (v2.1.269+)
+
+`validate` checks files; `claude plugin eval` checks what Claude *does* with the plugin. Cases live in `<plugin>/evals/<case>/` (`prompt.md` + `graders/*.md`); `claude plugin eval init` writes them for you, `claude plugin eval .` runs them from the plugin root, `--threshold <0..1>` turns the score into a CI gate (exit 1 below it). Add `evals/results/` to `.gitignore`. Needs git ≥ 2.31 when git is installed. Trigger-case recipe and the routing rule against `evals/evals.json`: `references/eval-mode.md` §"Native plugin eval".
+
+## Mods ride in the same plugin (v2.1.287+)
+
+A plugin can also carry a **mod** — TypeScript/JavaScript event handlers Claude Code runs in its own process (panes, instant commands, rewriting a tool call or prompt). One plugin may hold a mod, skills and an MCP server together. When a mod is the right form and what it can't do: `references/orchestration-guide.md` §"Which form?"; authoring: the bundled `plugin-authoring` skill.
 
 ## Distribution notes
 

@@ -1,6 +1,6 @@
 # Agent Authoring Guide
 
-> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
+> Last audited against Claude Code docs: 2026-10-02 (v2.1.287, mirror 934d35c9)
 
 When a skill creates or works with companion subagents.
 
@@ -12,7 +12,7 @@ Skills and subagents have separate `.md` files with **different** frontmatter fi
 Fields like `name`, `description`, `when_to_use`, `arguments`, `allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`, `agent`, `hooks`, `paths`, `shell`, `disable-model-invocation`, `user-invocable`. (Skill uses the hyphenated `disallowed-tools`; agents use camelCase `disallowedTools` — see below.)
 
 ### Agent `.md` frontmatter (`.claude/agents/`)
-Fields: `name`, `description`, `prompt`, `tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `skills`, `mcpServers`, `hooks`, `memory`, `background`, `effort`, `isolation`, `color`, `initialPrompt`, `experimental`. (See the canonical [sub-agents docs](https://code.claude.com/docs/en/sub-agents) for the complete table.) For agents the `model` field defaults to `inherit`. `prompt` sets the system prompt and is equivalent to the markdown body — it exists mainly for the JSON `--agents` flag; in `.md` files write the body instead. Since v2.1.243 `--agents` no longer silently ignores invalid JSON or invalid agent definitions — it exits with a clear error, like `--mcp-config`, so a malformed inline definition fails loudly rather than yielding a session without the agent.
+Fields: `name`, `description`, `prompt`, `tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `skills`, `mcpServers`, `hooks`, `memory`, `background`, `omitClaudeMd`, `effort`, `isolation`, `color`, `initialPrompt`, `experimental`. (See the canonical [sub-agents docs](https://code.claude.com/docs/en/sub-agents) for the complete table.) `omitClaudeMd: true` (v2.1.271+) launches the subagent without the user, project and local CLAUDE.md files (managed policy files still load) — for workers that get everything from the delegation prompt. **An omitted `model` is not the same as `model: inherit`:** without the field Claude Code walks the order below (spawn-time model → definition → `CLAUDE_CODE_SUBAGENT_MODEL` → main model), so an exported variable decides; an explicit `inherit` is the definition's value and beats the variable. `prompt` sets the system prompt and is equivalent to the markdown body — it exists mainly for the JSON `--agents` flag; in `.md` files write the body instead. Since v2.1.243 `--agents` no longer silently ignores invalid JSON or invalid agent definitions — it exits with a clear error, like `--mcp-config`, so a malformed inline definition fails loudly rather than yielding a session without the agent. Since v2.1.281 `--agents` also accepts a path to a JSON file (with `-p`), and an empty `prompt` is allowed.
 
 Two field semantics worth spelling out:
 
@@ -28,12 +28,12 @@ experimental:
 ---
 ```
 
-  Caveat for plugin authors: plugin-shipped agents support only `name`, `description`, `model`, `effort`, `maxTurns`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `isolation` (plugins-reference.md:68) — `experimental` is not on that list, so don't count on `cacheTtl` for an agent that lives *inside* a plugin. It is dependable in project/user agent files.
+  Plugin-shipped agents support `name`, `description`, `model`, `effort`, `maxTurns`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, `isolation` (`"worktree"` only), `color`, and the `cacheTtl` key of `experimental` — so `cacheTtl` works inside a plugin too. They ignore `permissionMode`, `hooks`, `mcpServers`, and `initialPrompt` (docs: plugin components, "Frontmatter fields in plugin agents").
 
 **Naming (v2.1.218+):** agent names use lowercase letters and hyphens and **cannot contain `:`** — the colon is reserved for plugin-scoped identifiers (`my-plugin:reviewer`). Claude Code doesn't load a file whose agent name contains one and logs the error only to the debug log, so a bad name fails silently from the user's point of view. Also note the Task tool's `mode` parameter is deprecated and ignored as of v2.1.212 — subagents inherit the parent session's permission mode by default; use `permissionMode` in the agent definition instead.
 
 Model-inheritance facts worth knowing when pinning workers:
-- `CLAUDE_CODE_SUBAGENT_MODEL` sets the **default** subagent model since v2.1.251 — it no longer overrides everything. The order is: a model named at spawn time → the definition's `model` field (including `inherit`) → `CLAUDE_CODE_SUBAGENT_MODEL` → the session/lead model. So `model:` in `.claude/agents/<worker>.md` is the reliable place to pin a worker; before v2.1.251 an exported variable silently beat it. Setting the variable to `inherit` is the same as leaving it unset.
+- `CLAUDE_CODE_SUBAGENT_MODEL` sets the **default** subagent model since v2.1.251 — it no longer overrides everything. The order is: a model named at spawn time → the definition's `model` field (including `inherit`) → `CLAUDE_CODE_SUBAGENT_MODEL` → the session/lead model. So `model:` in `.claude/agents/<worker>.md` is the reliable place to pin a worker — **unless `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` is set** (v2.1.257+): then every definition's `model` is ignored and Claude can't pass one at spawn; only forks and `context: fork` skills with `model: inherit` stay on the main model. Before v2.1.251 an exported variable silently beat the pin as well. Setting the variable to `inherit` is the same as leaving it unset. Verify the model a worker actually got with `/tasks`. Choosing the model and effort per role: `references/model-routing.md`.
 - The built-in **Explore** agent inherits the main session's model (v2.1.198+; it no longer runs on Haiku), capped at Opus on the Claude API — with today's default session model that means Explore runs on the session's Opus/Sonnet tier, never above it. On other providers (Bedrock, Vertex, Foundry) it inherits directly with no cap. A user/project agent named `Explore` overrides the built-in and keeps its own `model` field — define one with `model: haiku` to pin exploration to a cheaper model.
 - `isolation: worktree` is git-hardened: worktree subagents are prevented from running shell/git-mutating commands against the main checkout instead of their own worktree (fixes landed in v2.1.203, v2.1.210, and v2.1.222 — the latter extends isolation of file edits and Bash to every session type). Still treat worktree isolation as protection against *accidents*, not a security boundary.
 
@@ -46,7 +46,7 @@ Set in frontmatter: `memory: project`. (The `/agents` wizard was removed in v2.1
 
 **Do not mix these.** Agent-specific fields (`memory`, `isolation`, `mcpServers`, etc.) belong in agent `.md` files, not in SKILL.md.
 
-> **Plugin-distributed agents are restricted.** For security, agents loaded from a plugin silently ignore the `hooks`, `mcpServers`, and `permissionMode` frontmatter fields. If a companion agent needs those, ship it in `.claude/agents/` or `~/.claude/agents/` rather than inside the plugin.
+> **Plugin-distributed agents are restricted.** For security, agents loaded from a plugin silently ignore the `hooks`, `mcpServers`, `permissionMode`, and `initialPrompt` frontmatter fields. If a companion agent needs those, ship it in `.claude/agents/` or `~/.claude/agents/` rather than inside the plugin.
 
 ## Skill with `context: fork`
 
@@ -101,7 +101,7 @@ The **full content** of each listed skill is injected at agent startup — not j
 
 - A skill with `disable-model-invocation: true` **cannot** be preloaded this way — Claude Code skips it and logs a warning, so don't rely on it here.
 - Built-in agents (Explore, Plan, general-purpose) don't preload skills — `skills` only works on custom agent definitions.
-- When the definition runs as an agent-teams **teammate**, `skills` (and `mcpServers`) are not applied — see `references/orchestration-guide.md` §5.
+- When the definition runs as an agent-teams **teammate**, `skills` is never applied and `mcpServers` only in a split-pane teammate — see `references/orchestration-guide.md` §5.
 
 ## Managing agents
 

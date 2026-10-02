@@ -79,7 +79,7 @@ scripts/prepare_eval.py <skill-path> <eval-id> --output-dir <workspace>/eval-<id
 Each run directory gets an `eval_metadata.json` (prompt, assertions, staged paths). Give evals descriptive `eval_name`s where possible — they read better in the viewer than bare eval numbers (see `references/schemas.md`).
 
 If the task tools are available in this session, track the eval on the task list —
-they are absent by default on Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 and newer
+they are absent by default on every model outside the v2.1.268 allowlist (Claude 3.x, Opus 4–4.7, Sonnet 4–4.6, Haiku 4.5), i.e. on Opus 4.8, Opus 5.x, Sonnet 5.x, Fable and any unrecognized model ID
 (see `references/task-tracking.md`), so skip this step silently when they are and
 report stage transitions in the response text instead. Either way, the run
 directory and `grading.json` remain the authoritative state.
@@ -172,3 +172,47 @@ To compare skill-enabled vs no-skill performance:
 4. Blind Compare outputs
 5. Report winner with analysis
 ```
+
+## Native plugin eval (`claude plugin eval`, v2.1.269+)
+
+**Routing rule — pick the eval system by where the skill lives:**
+
+| Skill lives in | Use | Why |
+|---|---|---|
+| A plugin | `claude plugin eval` | Each run is a fresh isolated non-interactive session with only the plugin loaded, and the tool repeats it with **no plugin** for the baseline. `skillOverrides` doesn't apply to plugin skills, so this mode's with/without split can't switch a plugin skill off. |
+| `~/.claude/skills/` or `.claude/skills/` | This mode's `evals/evals.json` loop | The baseline turns the skill off with `skillOverrides: {"<name>": "off"}`. |
+
+The formats are not interchangeable — neither tool reads the other's case files — so a plugin skill can carry both, each measuring with its own tool.
+
+**Layout** (inside the plugin root; `claude plugin eval init` writes it interactively, `claude plugin eval init --bare <case>` writes a blank template):
+
+```text
+evals/
+├── <case>/
+│   ├── prompt.md          # frontmatter: max_turns, allowed_tools, model, timeout_seconds, description, expected_outcome; body = the user prompt
+│   └── graders/<name>.md  # frontmatter: type (regex | tool_used | tool_order | file_exists | llm | baseline) + options
+└── results/               # written by every run — add `evals/results/` to .gitignore
+```
+
+**Trigger cases** (does the skill fire on natural phrasing, and stay silent off-topic) are the cheap, high-signal ones:
+
+- Prompt: a request the way a user would type it, without naming the skill; `allowed_tools: [Read, Glob, Grep, Skill]`.
+- `max_turns: 2` — the skill fires on turn 1, and a higher cap only buys turns of Claude trying to finish the job with read-only tools. A run that hits the cap is recorded as a run error, but a case whose only graders are `tool_used` still scores on them. Raise the cap only when a grader needs the finished answer.
+- "Fires" grader: `type: tool_used`, `tool: Skill`, `input_match: '"skill"\s*:\s*"(?:<plugin>:)?<skill>"'`, `min: 1`.
+- "Must not fire" grader: `type: tool_used`, `tool: Skill`, `min: 0`, `max: 0`, `arm: both`.
+- Run with `--ablation none`: one arm, half the cost, and `tool_used: Skill` graders count. Under the default two-arm run they are excluded from the score (they can never pass without the plugin) and show only as indicators.
+
+**Run** from the plugin root:
+
+```bash
+claude plugin eval . --ablation none --runs 3 -j 3 --model <full-model-id> \
+  --no-publish --max-cost-usd <usd> --trust-plugin --json <scratch>/eval-result.json
+```
+
+- `--trust-plugin` answers the first-run trust prompt — required under a tool without a TTY or in CI. `--json <path>` writes the result document and prints nothing else; omit it to see the summary table. `--no-publish` keeps the HTML report local.
+- `--max-cost-usd` is checked before each run starts; runs already in flight finish, so spend can pass the ceiling (exit 2 if any run was left unstarted).
+- Pin `--model` with a full model ID so a model rollout isn't read as a skill regression.
+- CI gate: `--threshold <0..1>` (default `1.0`); any case below it exits 1.
+- Requires git ≥ 2.31 when git is installed (older git stops before any case runs). Every run is a real model call on the user's plan or API bill.
+
+For quality cases (not just triggering), pair one grader on the result (`llm` rubric, `regex`, `file_exists`) with one on the steps (`tool_used`/`tool_order`), and keep the default two-arm run so `Δ` shows what the plugin adds. Full reference: the `plugin-evals.md` page of the Claude Code docs.

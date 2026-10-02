@@ -1,6 +1,6 @@
 # Skill Content Lifecycle
 
-> Last audited against Claude Code docs: 2026-09-01 (~v2.1.251, mirror b290425)
+> Last audited against Claude Code docs: 2026-10-02 (v2.1.287, mirror 934d35c9)
 
 How skill content behaves across a Claude Code session.
 
