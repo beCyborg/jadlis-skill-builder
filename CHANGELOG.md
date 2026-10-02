@@ -1,5 +1,15 @@
 # Changelog — jadlis-skill-builder
 
+## [2.2.2] — 2026-10-02 — effort во frontmatter скилла сбрасывает кэш (замер) / skill `effort:` busts the cache (measured)
+
+### Для человека
+- Проверили на деле: если у обычного (не вынесенного в субагента) скилла стоит свой `effort:`, на этом ходу почти весь кэш разговора считается заново. Документация обещает обратное только для команды `/effort`. Совет теперь прямой: свой effort — только у скиллов с `context: fork` и у агентов.
+
+### For agents
+- Changed: `skills/skill-builder/references/model-routing.md` — «not separately verified» replaced by the measurement (CC 2.1.287, Opus 5.5, subscription, `claude -p --resume`, n=1 per arm: `effort: low` skill turn cache_read 11.8K / write ~43K vs control 51.3K / 2.5K) and the rule «no `effort:` on inline skills».
+- Changed: `references/frontmatter-reference.md` — `effort` row points to the measurement.
+- Changed: `.claude-plugin/plugin.json` version 2.2.1 → 2.2.2.
+
 ## [2.2.1] — 2026-10-02 — исправлена ссылка на документацию / fixed a docs reference
 
 ### Для человека

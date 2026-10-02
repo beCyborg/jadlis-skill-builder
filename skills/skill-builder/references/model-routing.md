@@ -39,9 +39,12 @@ turn, cheap ones included, and costs a cache rebuild (next section).
   Cloud's Agent Platform, a Claude apps gateway, with
   `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`, or under a HIPAA configuration
   (`prompt-caching.md:38,97-99`). The docs state this for changing the level with
-  `/effort`; that a skill's `effort:` frontmatter behaves the same is **not
-  separately verified** — measure `cache_read` in a transcript before relying on it
-  for a hot path.
+  `/effort`. **A skill's `effort:` frontmatter does NOT behave the same** — measured
+  2026-10-02 (CC 2.1.287, Opus 5.5, subscription, `claude -p --resume`, one run per
+  arm): on the skill turn a `effort: low` skill in a `high` session read 11.8K cached
+  tokens and rewrote ~43K, while the same skill without `effort:` read 51.3K and wrote
+  2.5K. So: no `effort:` on inline (main-thread) skills; put a different effort on a
+  `context: fork` skill or an agent, which has its own cache anyway.
 - **Skill loading itself doesn't.** Skills and plan mode append their instructions as
   conversation messages, so the cached prefix stays intact (`prompt-caching.md:33`).
 - **Toggling the advisor doesn't** touch the main model's cache (`advisor.md:168`).
