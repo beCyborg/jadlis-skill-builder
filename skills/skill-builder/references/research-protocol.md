@@ -27,7 +27,7 @@ grep -rn "<feature keyword>" ~/.claude-code-docs/docs/skills.md \
 Key files: `skills.md` (frontmatter, substitutions, lifecycle), `sub-agents.md`,
 `agent-teams.md`, `workflows.md`, `hooks.md`, `settings.md` (settings keys that
 gate skill/workflow behavior), `checkpointing.md` (what `/rewind` can and cannot
-undo), `plugins-reference.md`, `changelog.md` (feature version gates). This costs
+undo), `plugins__manifest-reference.md` and `plugins__components.md`, `changelog.md` (feature version gates). This costs
 nothing and catches the most common failure: a skill built on a stale or
 misremembered feature. When the mirror and this skill's reference files disagree,
 the mirror wins — and note the discrepancy so the reference can be fixed.

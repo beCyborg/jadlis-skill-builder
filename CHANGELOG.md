@@ -1,5 +1,14 @@
 # Changelog — jadlis-skill-builder
 
+## [2.2.1] — 2026-10-02 — исправлена ссылка на документацию / fixed a docs reference
+
+### Для человека
+- Протокол сверки с документацией ссылался на страницу, которой больше нет; теперь — на актуальные страницы про плагины.
+
+### For agents
+- Fixed: `skills/skill-builder/references/research-protocol.md` — `plugins-reference.md` (gone from the docs mirror) → `plugins__manifest-reference.md` and `plugins__components.md`.
+- Changed: `.claude-plugin/plugin.json` version 2.2.0 → 2.2.1.
+
 ## [2.2.0] — 2026-10-02 — сверка с Claude Code 2.1.287: имя скилла, нативные эвалы, выбор формы, роутинг моделей / alignment with Claude Code 2.1.287: skill naming, native evals, choosing the form, model routing
 ### Для человека
 - Правило «имя скилла = имя папки» снято: в 2.1.287 личный или проектный скилл вызывается и по полю `name`, и по имени папки; валидатор предупреждает про запрещённые имена (`anthropic-skills`, папка `synced`) и про скилл `verify`, который запускается перед каждым коммитом.
