@@ -7,7 +7,7 @@
 начнёт включаться сам.
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 ```
 
@@ -61,7 +61,7 @@ claude plugin install jadlis-skill-builder@jadlis
 ```
 Ты — установщик. Поставь на этот Mac плагин jadlis-skill-builder из маркетплейса jadlis.
 Выполни ровно эти команды, дословно, ничего не сокращая:
-1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+1. claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
 2. claude plugin install jadlis-skill-builder@jadlis
 3. claude plugin list — покажи мне строку про jadlis-skill-builder и его версию.
 Ключи этому плагину не нужны: он работает на подписке Claude Code, ничего вводить не надо.
@@ -73,7 +73,7 @@ claude plugin install jadlis-skill-builder@jadlis
 **б) Команды руками.**
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 claude plugin list
 ```

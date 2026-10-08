@@ -1,5 +1,19 @@
 # Changelog — jadlis-skill-builder
 
+## [2.2.3] — 2026-10-08 — репозиторий переехал на GitLab / repository moved to GitLab
+
+### Для человека
+
+- Плагин теперь живёт на GitLab: https://gitlab.com/beCyborg/jadlis-skill-builder. Аккаунт GitHub beCyborg заблокирован, поэтому старые ссылки открывают 404.
+- Каталог ставится новой командой: `claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git`. Если ты уже ставил его со старой ссылки GitHub, удали каталог командой `claude plugin marketplace remove jadlis` и поставь всё заново по README. Плагины этого каталога при удалении тоже снимутся.
+- Работа плагина не изменилась.
+
+### For agents
+
+- Changed: every `github.com/beCyborg/*` link in README pairs, `docs/employee` pair, the legacy root `marketplace.json`, `references/plugin-packaging.md` and `CLAUDE.md` now points to `gitlab.com/beCyborg/*`; `marketplace add` uses the full `https://…/jadlis-hub.git` URL (non-GitHub hosts have no `owner/repo` shorthand).
+- Changed: `.claude-plugin/plugin.json` `homepage`/`repository` → GitLab; version 2.2.2 → 2.2.3.
+- Changed: CI moved from `.github/workflows/ci.yml` (reusable workflow in `beCyborg/jadlis-hub`) to `.gitlab-ci.yml` including `/ci/plugin-ci.yml` from `beCyborg/jadlis-hub` on GitLab — same checks: `claude plugin validate --strict`, gitleaks full history, README parity, privacy grep.
+
 ## [2.2.2] — 2026-10-02 — effort во frontmatter скилла сбрасывает кэш (замер) / skill `effort:` busts the cache (measured)
 
 ### Для человека

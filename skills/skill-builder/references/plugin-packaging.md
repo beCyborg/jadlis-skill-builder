@@ -54,7 +54,7 @@ A plugin with a **root-level `SKILL.md`**, no `skills/` subdir **and no `skills`
 - `$schema` is `https://json.schemastore.org/claude-code-plugin-manifest.json` (v2.1.120+). Claude Code **ignores it at load time** — it is for editor autocomplete only, not a CI gate (the published schemas lag the CLI).
 - `themes` and `monitors` must be nested under `"experimental": { ... }` (top-level still works but warns).
 - `defaultEnabled: false` (v2.1.154+) ships the plugin disabled; users enable it with `/plugin` or `claude plugin enable`. Dependencies of enabled plugins stay enabled automatically. A `defaultEnabled` in the marketplace entry overrides the manifest value.
-- `userConfig` declares values Claude Code prompts for at enable time, substituted as `${user_config.KEY}` and exported to hooks as `CLAUDE_PLUGIN_OPTION_<KEY>`. Shell-executed fields reject the substitution. Full canon: the `plugin-creator` plugin (repo `beCyborg/jadlis-plugin-creator`).
+- `userConfig` declares values Claude Code prompts for at enable time, substituted as `${user_config.KEY}` and exported to hooks as `CLAUDE_PLUGIN_OPTION_<KEY>`. Shell-executed fields reject the substitution. Full canon: the `plugin-creator` plugin (repo `gitlab.com/beCyborg/jadlis-plugin-creator`).
 - `dependencies` declares plugin→plugin requirements, optionally with semver ranges resolved against git tags named `{plugin-name}--v{version}` — without those tags a constraint can't resolve.
 - Plugin **agents** support only `name`, `description`, `model`, `effort`, `maxTurns`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, `isolation` (`"worktree"` only), `color`, and the `cacheTtl` key of `experimental`. `permissionMode`, `hooks`, `mcpServers`, and `initialPrompt` are **ignored** in plugin-shipped agents — ship hooks and MCP servers as plugin components instead. An agent file whose frontmatter doesn't parse still loads, with every field ignored and a generic description.
 
@@ -121,4 +121,4 @@ A plugin can also carry a **mod** — TypeScript/JavaScript event handlers Claud
 
 ---
 
-> Deep marketplace operations (sources, headersHelper, renames, release channels, org distribution) are covered by the `plugin-creator` plugin (repo `beCyborg/jadlis-plugin-creator`); this file stays a minimal packaging guide.
+> Deep marketplace operations (sources, headersHelper, renames, release channels, org distribution) are covered by the `plugin-creator` plugin (repo `gitlab.com/beCyborg/jadlis-plugin-creator`); this file stays a minimal packaging guide.

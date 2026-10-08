@@ -7,7 +7,7 @@ architecture is chosen, a draft is written, test prompts are run against it, and
 reworked until the skill starts firing on its own.
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 ```
 
@@ -61,7 +61,7 @@ keeps the registry of facts duplicated across files together with the date of th
 ```
 You are the installer. Install the plugin jadlis-skill-builder from the jadlis marketplace on this Mac.
 Run exactly these commands, verbatim, shortening nothing:
-1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+1. claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
 2. claude plugin install jadlis-skill-builder@jadlis
 3. claude plugin list — show me the line about jadlis-skill-builder and its version.
 This plugin needs no keys: it runs on the Claude Code subscription, nothing has to be entered.
@@ -73,7 +73,7 @@ If a command returns an error, stop, show me the output, and do not move to the 
 **b) Commands by hand.**
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 claude plugin list
 ```

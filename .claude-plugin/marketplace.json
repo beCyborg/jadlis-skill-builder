@@ -4,7 +4,7 @@
   "description": "Tools for creating, improving, evaluating, and benchmarking Claude Code skills.",
   "owner": {
     "name": "beCyborg",
-    "url": "https://github.com/beCyborg"
+    "url": "https://gitlab.com/beCyborg"
   },
   "plugins": [
     {
@@ -15,7 +15,7 @@
       },
       "source": "./",
       "category": "development",
-      "homepage": "https://github.com/beCyborg/jadlis-skill-builder"
+      "homepage": "https://gitlab.com/beCyborg/jadlis-skill-builder"
     }
   ],
   "renames": {}

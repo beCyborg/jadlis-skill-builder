@@ -40,7 +40,7 @@ claude plugin validate .claude-plugin/marketplace.json
 ## Приватность
 
 - В файлах нет ключей, почт, телефонов, путей владельца (`/Users/<имя>` → писать `~`) и упоминаний приватного бэкапа.
-- Перед пушем локально: `gitleaks git .` и `privacy-grep.py`. В CI (`.github/workflows/ci.yml`, переиспользуемый `beCyborg/jadlis-hub/.github/workflows/plugin-ci.yml@main`) гоняются валидация плагинов, gitleaks, privacy-grep и README-паритет.
+- Перед пушем локально: `gitleaks git .` и `privacy-grep.py`. В CI (`.gitlab-ci.yml`, общий шаблон `/ci/plugin-ci.yml` из `gitlab.com/beCyborg/jadlis-hub`) гоняются валидация плагинов, gitleaks, privacy-grep и README-паритет.
 
 ## Разработка
 
