@@ -21,6 +21,7 @@ In a personal or project skill both the frontmatter `name` and the directory nam
 
 - `anthropic-skills`, or any name starting with `anthropic-skills:` — reserved for skills synced from claude.ai. Outside a plugin, a skill folder, a frontmatter `name`, a command file or a saved workflow with that name **doesn't load** (a startup notice names it). A *plugin* named `anthropic-skills` still loads.
 - A skill folder named `synced`, in any capitalization — `~/.claude/skills/synced/` is where claude.ai skills are downloaded, so a skill you author under that name is skipped in the enterprise, personal and project locations.
+- A folder or file name with hidden, direction-changing or blank-like characters (zero-width, bidi marks), `<` or `>` — the skill is not offered until renamed, and a frontmatter `name` with them is ignored (v2.1.299+, changelog 2.1.299). A `name` longer than 256 characters is ignored too (v2.1.292+).
 
 **A name with side effects:** when the project or user skills include one named `verify`, Claude is told to run it right before every commit (except docs-only and tests-only commits; v2.1.286+). Name a skill `verify` only if that is exactly what you want.
 

@@ -1,5 +1,27 @@
 # Changelog — jadlis-skill-builder
 
+## [2.3.0] — 2026-10-14 — справочники сверены с Claude Code 2.1.300 / references aligned with Claude Code 2.1.300
+
+### Для человека
+
+- Плагин теперь ставится одной командой: `claude plugin install jadlis-skill-builder --marketplace https://gitlab.com/beCyborg/jadlis-hub.git`. Нужен Claude Code 2.1.292 или новее; старая пара команд осталась в README для старых версий.
+- Справочники знают о новых правилах Claude Code 2.1.288–2.1.300: effort при запуске агента, ранняя компакция агента, лимиты имён и предзагрузки скиллов, хуки, которые блокируют при сбое.
+- Нативный eval умеет убирать встроенные инструменты из прогона, например `Agent`. Скилл подсказывает, когда это нужно.
+
+### For agents
+
+- Added: `references/agent-authoring.md` — `effort` semantics (Agent-tool `effort` parameter per launch beats the definition, persists on resume, `CLAUDE_CODE_EFFORT_LEVEL` beats both; v2.1.292, `sub-agents.md:316,421`); `autoCompactWindow` field (v2.1.296; integer 100000–1000000, only lowers the inherited window, read from the 2.1.300 CLI); 256-char agent-name cap (v2.1.292); MCP entries in `tools:`/`disallowedTools:` reach only the named server, `mcp__<whole name>__*` for names with `__` (v2.1.299); `skills:` preloads at most 32 (v2.1.295); `--debug` names unknown agent fields (v2.1.296).
+- Added: `references/frontmatter-reference.md` — `name` row: 256-char cap (v2.1.292), hidden/bidi/blank-like chars and `<` `>` in `name:` or the folder/file name (v2.1.299); §4: `!` commands with raw control chars refused (v2.1.290), `UserPromptSubmit` runs before skill expansion (v2.1.299); §6: a skill's own `UserPromptSubmit` hook first runs on the next prompt (v2.1.299), `onFailure: "block"` after the exit-code rule (v2.1.295).
+- Added: `references/model-routing.md` §1 — subagent effort order with the Agent-tool `effort` parameter; Workflow row: `CLAUDE_CODE_WORKFLOW_SUBAGENT_MODEL` (v2.1.296), `workflows.md` citation 423 → 453.
+- Added: `references/orchestration-guide.md` — hook row of "Which form?" and architecture 6: `onFailure: "block"` for `command`/`http` hooks (v2.1.295, `hooks.md:904`).
+- Added: `references/eval-mode.md` + `SKILL.md` (Eval Mode) — `claude plugin eval --disallow-tools` and case field `disallowed_tools` (`prompt.md` frontmatter or `execution.disallowed_tools` in `case.yaml`, merged; v2.1.299); API-error runs score 0 and exit 1 (v2.1.299).
+- Added: `references/plugin-packaging.md` — one-command `claude plugin install <p> --marketplace <source>` (v2.1.292) with the two-command fallback; `validate` README install-line advice (v2.1.295).
+- Added: `references/description-optimization.md` §"Names that silently don't work" — hidden/bidi chars and `<` `>` (v2.1.299), >256-char `name` (v2.1.292).
+- Changed: `README.md` / `README.en.md` — install via `--marketplace`, two-command pair kept as fallback for CC < 2.1.292.
+- Changed: audit markers of the nine version-dense references and the `references/AUDIT.md` table → 2026-10-14 / v2.1.300 / mirror 305bb5ef; audit note for changelog 2.1.288–2.1.299.
+- Changed: `.claude-plugin/plugin.json` version 2.2.3 → 2.3.0.
+- Changed: repo conventions moved `CLAUDE.md` → `.claude/CLAUDE.md` — since CC 2.1.289 `claude plugin validate .` also checks the root plugin, and a root `CLAUDE.md` failed `--strict` ("not loaded as project context"). Claude Code still loads it as project context from `.claude/`.
+
 ## [2.2.3] — 2026-10-08 — репозиторий переехал на GitLab / repository moved to GitLab
 
 ### Для человека

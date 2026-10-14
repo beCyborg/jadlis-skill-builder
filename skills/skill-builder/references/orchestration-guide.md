@@ -1,6 +1,6 @@
 # Choosing an Orchestration Architecture
 
-> Last audited against Claude Code docs: 2026-10-02 (v2.1.287, mirror 934d35c9)
+> Last audited against Claude Code docs: 2026-10-14 (v2.1.300, mirror 305bb5ef)
 
 When a new skill involves more than a single pass of inline work — fan-out over many
 items, background execution, scheduled runs, enforcement — the most consequential
@@ -18,7 +18,7 @@ if the answer is "skill" (or a skill plus something) — pick an architecture be
 | A procedure you keep pasting into chat; Claude or the user triggers it | **Skill** (rule in a skill) | On demand; Claude may skip it — a description is a hint, not a guarantee | mods overview "Compare…" table (`plugins__mods__overview.md:198`); `features-overview.md:42` |
 | Must apply on *every* turn: conventions, facts, "always do X" | **CLAUDE.md** / rules | Loaded every session, no trigger risk | `features-overview.md:40` |
 | A voice, length or format for every reply, or Claude in a non-engineering role | **Output style** | Session-wide, not invoked | `features-overview.md:41` |
-| Block, allow or log an event with a script; must-happen / must-not-happen steps | **Classic (settings) hook** — or `hooks:` in skill frontmatter | Deterministic; stable API; exit 2 blocks on gate events | `plugins__mods__overview.md:198`; architecture 6 below |
+| Block, allow or log an event with a script; must-happen / must-not-happen steps | **Classic (settings) hook** — or `hooks:` in skill frontmatter | Deterministic; stable API; exit 2 blocks on gate events. A hook that crashes, can't start or times out lets the action through unless a `command`/`http` hook sets `"onFailure": "block"` (v2.1.295+) — use it on policy gates | `plugins__mods__overview.md:198`; `hooks.md:904`; architecture 6 below |
 | A pane or band in the UI, a `/command` that runs code with no Claude turn, rewriting a tool call, prompt or request | **Mod** (plugin of in-process handlers) | See mod limits below | `plugins__mods__overview.md:15-23,198` |
 | Claude needs to reach an external system (API, DB, browser) | **MCP server** | Gives Claude tools; a skill can then teach *how* to use them | `plugins__mods__overview.md:198`; `features-overview.md:47` |
 | Keep working until a verifiable condition holds | **`/goal`** (this session) or a **Stop hook** (every session in scope; script or prompt check) | Both fire after every turn; `/goal` adds a fresh evaluator model | `goal.md:18-28` |
@@ -231,7 +231,9 @@ token cost of all options.
 
 Not an execution architecture but a layer over any of the others. A skill-declared
 `PreToolUse` command hook that exits with code 2 blocks the action and feeds its
-message back — deterministic where prose is only a hint. Use for must-happen /
+message back — deterministic where prose is only a hint; add `"onFailure": "block"`
+(v2.1.295+, `command`/`http` only) so a broken hook blocks instead of failing open
+(`hooks.md:904`). Use for must-happen /
 must-not-happen steps in any architecture. Caveat: a skill's hook is **not**
 scoped to the invocation — it stays registered for the rest of the session. For a
 one-shot gate set `once: true`; for a standing one keep the `matcher`/`if` as

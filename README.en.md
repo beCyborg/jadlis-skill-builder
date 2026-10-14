@@ -7,6 +7,12 @@ architecture is chosen, a draft is written, test prompts are run against it, and
 reworked until the skill starts firing on its own.
 
 ```
+claude plugin install jadlis-skill-builder --marketplace https://gitlab.com/beCyborg/jadlis-hub.git
+```
+
+Claude Code older than 2.1.292 has no `--marketplace` flag. Then install with two commands:
+
+```
 claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 ```
@@ -73,13 +79,19 @@ If a command returns an error, stop, show me the output, and do not move to the 
 **b) Commands by hand.**
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
-claude plugin install jadlis-skill-builder@jadlis
+claude plugin install jadlis-skill-builder --marketplace https://gitlab.com/beCyborg/jadlis-hub.git
 claude plugin list
 ```
 
-The first command installs nothing — it adds the marketplace. Only the second one installs, and one
+The first command adds the jadlis marketplace if it isn't there yet and installs the plugin. One
 line removes it: `claude plugin uninstall jadlis-skill-builder@jadlis --keep-data`.
+
+Claude Code older than 2.1.292 has no `--marketplace` flag. Then install with two commands:
+
+```
+claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin install jadlis-skill-builder@jadlis
+```
 
 **c) The short command.** Open Claude Code in the folder you work in and type:
 

@@ -7,6 +7,12 @@
 начнёт включаться сам.
 
 ```
+claude plugin install jadlis-skill-builder --marketplace https://gitlab.com/beCyborg/jadlis-hub.git
+```
+
+Если Claude Code старше 2.1.292, флага `--marketplace` ещё нет. Тогда ставь двумя командами:
+
+```
 claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 ```
@@ -73,13 +79,19 @@ claude plugin install jadlis-skill-builder@jadlis
 **б) Команды руками.**
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
-claude plugin install jadlis-skill-builder@jadlis
+claude plugin install jadlis-skill-builder --marketplace https://gitlab.com/beCyborg/jadlis-hub.git
 claude plugin list
 ```
 
-Первая команда ничего не ставит — она добавляет маркетплейс. Ставит только вторая, и снимается
-она одной строкой: `claude plugin uninstall jadlis-skill-builder@jadlis --keep-data`.
+Первая команда добавляет маркетплейс jadlis, если его ещё нет, и ставит плагин. Снимается он
+одной строкой: `claude plugin uninstall jadlis-skill-builder@jadlis --keep-data`.
+
+Если Claude Code старше 2.1.292, флага `--marketplace` ещё нет. Тогда ставь двумя командами:
+
+```
+claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin install jadlis-skill-builder@jadlis
+```
 
 **в) Короткая команда.** Открой Claude Code в папке, где работаешь, и набери:
 

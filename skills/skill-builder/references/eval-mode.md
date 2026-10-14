@@ -189,7 +189,7 @@ The formats are not interchangeable — neither tool reads the other's case file
 ```text
 evals/
 ├── <case>/
-│   ├── prompt.md          # frontmatter: max_turns, allowed_tools, model, timeout_seconds, description, expected_outcome; body = the user prompt
+│   ├── prompt.md          # frontmatter: max_turns, allowed_tools, disallowed_tools, model, timeout_seconds, description, expected_outcome; body = the user prompt
 │   └── graders/<name>.md  # frontmatter: type (regex | tool_used | tool_order | file_exists | llm | baseline) + options
 └── results/               # written by every run — add `evals/results/` to .gitignore
 ```
@@ -213,6 +213,8 @@ claude plugin eval . --ablation none --runs 3 -j 3 --model <full-model-id> \
 - `--max-cost-usd` is checked before each run starts; runs already in flight finish, so spend can pass the ceiling (exit 2 if any run was left unstarted).
 - Pin `--model` with a full model ID so a model rollout isn't read as a skill regression.
 - CI gate: `--threshold <0..1>` (default `1.0`); any case below it exits 1.
+- Keep a built-in tool out of the runs (v2.1.299+): `--disallow-tools <tools...>` for every case (e.g. `--disallow-tools Agent TaskStop`), or the case field `disallowed_tools` (`prompt.md` frontmatter, or `execution.disallowed_tools` in `case.yaml`; the two lists are merged). It wins over `allowed_tools` and `--allow-tools` — use it when a skill should do the work itself and a run that delegates to a subagent would blur what is measured (changelog 2.1.299; `claude plugin eval --help`; case schema read from the 2.1.300 CLI — `plugin-evals.md` doesn't list the field yet).
+- Since v2.1.299 a run that ends on an API error scores 0 without grading and makes the suite exit 1 (changelog 2.1.299) — a red suite after an outage is not a skill regression; re-run before editing.
 - Requires git ≥ 2.31 when git is installed (older git stops before any case runs). Every run is a real model call on the user's plan or API bill.
 
 For quality cases (not just triggering), pair one grader on the result (`llm` rubric, `regex`, `file_exists`) with one on the steps (`tool_used`/`tool_order`), and keep the default two-arm run so `Δ` shows what the plugin adds. Full reference: the `plugin-evals.md` page of the Claude Code docs.

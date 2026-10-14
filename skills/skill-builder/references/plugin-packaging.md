@@ -1,6 +1,6 @@
 # Distributing a Skill as a Plugin
 
-> Last audited against Claude Code docs: 2026-10-02 (v2.1.287, mirror 934d35c9)
+> Last audited against Claude Code docs: 2026-10-14 (v2.1.300, mirror 305bb5ef)
 
 `python -m scripts.package_skill` produces a `.skill` file — the quick path for handing one skill to one person. For anything that needs to be **shared with teammates, versioned, updated over time, or published**, wrap the skill in a **plugin** inside a **marketplace**. (This skill ships exactly that way.)
 
@@ -99,6 +99,7 @@ claude plugin validate <path>     # primary validator
 - Pointed at a **bare skills/agents/commands directory** (`claude plugin validate .claude/skills`, `~/.claude`, `./my-plugin/agents`) it checks every file there — the way to catch unparseable frontmatter in a plugin that has no manifest yet. Requires v2.1.233+.
 - Add `--strict` in CI to turn **all** warnings into errors before you publish, and `--json` (v2.1.259+) for a machine-readable report. A clean run prints `Validation passed`.
 - Since v2.1.281 it also checks MCP servers (`.mcp.json` entries that would be silently dropped at load, undeclared `${user_config.*}` references, insecure URLs) and warns when a shell-form hook leaves `${CLAUDE_PLUGIN_ROOT}` unquoted (breaks on paths with spaces).
+- Since v2.1.295, when the plugin's README has no install line, `validate` prints the line to paste; this advice never changes the exit code, even with `--strict` (changelog 2.1.295).
 - As of v2.1.221, validation also warns when a marketplace or plugin name would be rejected by Claude Desktop's managed marketplace sync — heed these if the plugin may ever be distributed through managed settings.
 - `claude plugin details <name>` shows the component inventory plus projected always-on / on-invoke token cost — useful before shipping a large plugin.
 
@@ -114,6 +115,7 @@ A plugin can also carry a **mod** — TypeScript/JavaScript event handlers Claud
 
 ## Distribution notes
 
+- **One-command install (v2.1.292+):** `claude plugin install <plugin> --marketplace <source>` adds the marketplace if it isn't added yet (same policy checks as `claude plugin marketplace add`), then installs the plugin from it. `<plugin>` is the bare name, without `@marketplace`; `<source>` takes the `marketplace add` forms — `owner/repo`, a git or https URL, or a path (`plugins__cli-reference.md:88`; `plugins__publish.md:116`). The in-session `/plugin install <plugin> --marketplace <source>` needs only v2.1.275+. Put this line first in a README and keep `claude plugin marketplace add <source>` + `claude plugin install <plugin>@<marketplace>` below it for older versions. If the fetched catalog has the name of a marketplace already added from another source, the existing one is kept and nothing is installed (`plugins__troubleshooting.md:605`).
 - `claude plugin init <name>` scaffolds a plugin into `~/.claude/skills/<name>/`; it loads next session as `<name>@skills-dir` with no marketplace and no install step — the cheapest development loop.
 - Test a local plugin with `--plugin-dir <path>` (accepts a `.zip`), or fetch one for a session with `--plugin-url <url>`.
 - `skipLfs` on `github`/`git` marketplace sources skips Git LFS during clone/update; `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` helps environments without SSH keys.

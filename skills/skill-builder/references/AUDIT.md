@@ -12,19 +12,23 @@ the SYNC facts below — the one file that could drift silently.)
 
 | File | Last audited | CC version |
 |---|---|---|
-| `references/frontmatter-reference.md` | 2026-10-02 | v2.1.287 (mirror 934d35c9) |
-| `references/orchestration-guide.md` | 2026-10-02 | v2.1.287 (mirror 934d35c9) |
-| `references/agent-authoring.md` | 2026-10-02 | v2.1.287 (mirror 934d35c9) |
-| `references/plugin-packaging.md` | 2026-10-02 | v2.1.287 (mirror 934d35c9) |
-| `references/skill-lifecycle.md` | 2026-10-02 | v2.1.287 (mirror 934d35c9) |
-| `references/environments.md` | 2026-10-02 | v2.1.287 (mirror 934d35c9) |
-| `references/sandboxing.md` | 2026-10-02 | v2.1.287 (mirror 934d35c9) |
-| `references/schemas.md` | 2026-10-02 | v2.1.287 (mirror 934d35c9) |
-| `references/model-routing.md` | 2026-10-02 | v2.1.287 (mirror 934d35c9) |
+| `references/frontmatter-reference.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
+| `references/orchestration-guide.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
+| `references/agent-authoring.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
+| `references/plugin-packaging.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
+| `references/skill-lifecycle.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
+| `references/environments.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
+| `references/sandboxing.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
+| `references/schemas.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
+| `references/model-routing.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
 
 Note: the 2026-10-02 audit read the mirror's changelog 2.1.257–2.1.287 in full and
 checked the name semantics by hand on an installed 2.1.287 (a project skill in folder
 `probe-dir` with `name: probe-name` answers to both `/probe-name` and `/probe-dir`).
+The 2026-10-14 audit read the mirror's changelog 2.1.288–2.1.299 in full (the mirror
+has no 2.1.297, 2.1.298 or 2.1.300 entry; the installed CLI is 2.1.300). Facts the docs
+pages don't carry yet — agent `autoCompactWindow` bounds, the eval case field
+`disallowed_tools` — were read from `claude plugin eval --help` and the 2.1.300 CLI.
 
 ## SYNC registry — facts duplicated across files
 

@@ -324,7 +324,7 @@ Read references/eval-mode.md      # Complete Eval workflow
 Read references/schemas.md        # JSON output structures
 ```
 
-**Which eval system.** A skill that ships in a **plugin** → the native `claude plugin eval` (isolated runs, built-in no-plugin baseline; `skillOverrides` can't switch plugin skills off for a baseline). A **personal or project** skill → this mode's `evals/evals.json` loop. The two formats don't read each other's files. Recipe for both: `references/eval-mode.md` §"Native plugin eval".
+**Which eval system.** A skill that ships in a **plugin** → the native `claude plugin eval` (isolated runs, built-in no-plugin baseline; `skillOverrides` can't switch plugin skills off for a baseline). A **personal or project** skill → this mode's `evals/evals.json` loop. The two formats don't read each other's files. To keep a built-in tool such as `Agent` out of native runs, pass `--disallow-tools Agent` or set the case field `disallowed_tools` (v2.1.299+). Recipe for both: `references/eval-mode.md` §"Native plugin eval".
 
 Use Eval mode when:
 - Testing a specific eval case
