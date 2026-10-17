@@ -106,7 +106,7 @@ mode itself.
 ## Limits, cost, updating
 
 **What it does not do.** It does not release plugins: the standard repository layout, validation,
-version, tag and release belong to its neighbour `plugin-creator`, which lives in its own repository.
+version, tag and release belong to its neighbour `plugin-builder`, which lives in its own repository.
 It does not turn into a skill what should not be one: a rule that must always apply is routed by
 triage into `CLAUDE.md` or a hook. It does not promise triggering — the description is reworked from
 runs, and the result is measured again each time. It does not judge matters of taste: where the

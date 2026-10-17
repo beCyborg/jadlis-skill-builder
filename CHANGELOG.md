@@ -1,5 +1,22 @@
 # Changelog — jadlis-skill-builder
 
+## [2.3.1] — 2026-10-17 — справочники сверены с Claude Code 2.1.302, plugin-creator стал plugin-builder / references aligned with Claude Code 2.1.302, plugin-creator renamed plugin-builder
+
+### Для человека
+
+- Соседний плагин `plugin-creator` теперь называется `plugin-builder`, команда — `/plugin-builder`. Я обновил ссылки в README, статье и справочниках.
+- Справочники знают о новых правилах Claude Code 2.1.300–2.1.302: Claude Code запускает форк-агентов и в `claude -p`, связка скиллов работает только в терминале, `/rewind` откатывает правки фонового форка лишь частично.
+- Раздел про хуки предупреждает о трёх ловушках: проверку `updatedInput`, лимит в 12 хуков одного события и фоновый процесс внутри хука.
+
+### For agents
+
+- Changed: `references/orchestration-guide.md` — architecture 2 disambiguation: fork mode (`subagent_type: "fork"`) on by default in `claude -p`, Agent SDK, desktop, VS Code since v2.1.302, `CLAUDE_CODE_FORK_SUBAGENT=0` turns it off, `claude mcp serve` never offers it (changelog 2.1.302; `sub-agents.md:1247` still says off); `/rewind` restores only files Claude had already edited. Architecture 3: desktop/VS Code always background the main conversation's subagents, a subagent's own Agent calls run in the foreground in `-p`/SDK/desktop/VS Code (v2.1.302). Architecture 6: `updatedInput` validation (v2.1.300), 12 concurrent `prompt`/`agent` hooks per event (v2.1.302), background process in a hook (`hooks.md:889-893`). Citations `hooks.md:904` → `910`, `sub-agents.md:422-433` → `426-437`.
+- Changed: `references/frontmatter-reference.md` — §2 stacked invocation only at the terminal prompt, `-p`/SDK load the first skill only (`skills.md:693-695`); §3 only the first 64 argument names, each up to 64 chars, are filled in (v2.1.301); §5 `/rewind` after a background fork restores only files Claude had already edited (`skills.md:810`, `checkpointing.md:87`); §6 runtime limits block (`updatedInput`, 12-hook cap, suspect-capture), `hooks.md:904` → `910`.
+- Changed: `references/agent-authoring.md` — `--debug` string `does not recognize or apply` (`sub-agents.md:301`); `autoCompactWindow` now documented (`sub-agents.md:313,1170-1187`: env var wins, `200k` reads as 200, `invalid autoCompactWindow` in the debug log), listed among plugin-agent fields (`plugins__components.md:739`); MCP whole-server entries per `sub-agents.md:480-486`; shifted line citations.
+- Changed: `references/plugin-packaging.md`, `.claude/CLAUDE.md`, `README.md`, `README.en.md`, `docs/employee.md`, `docs/employee.en.md` — `plugin-creator` → `plugin-builder` (`/plugin-builder`, `gitlab.com/beCyborg/jadlis-plugin-builder`); `SKILL.md` Orchestration — partial `/rewind` coverage.
+- Changed: audit markers of the four touched references and the `references/AUDIT.md` table → 2026-10-17 / v2.1.302 / mirror da8a6ce9; audit note for changelog 2.1.301–2.1.302; SYNC row of the fork `/rewind` gap.
+- Changed: `.claude-plugin/plugin.json` version 2.3.0 → 2.3.1.
+
 ## [2.3.0] — 2026-10-14 — справочники сверены с Claude Code 2.1.300 / references aligned with Claude Code 2.1.300
 
 ### Для человека

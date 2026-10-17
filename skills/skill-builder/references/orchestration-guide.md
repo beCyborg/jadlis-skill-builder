@@ -1,6 +1,6 @@
 # Choosing an Orchestration Architecture
 
-> Last audited against Claude Code docs: 2026-10-14 (v2.1.300, mirror 305bb5ef)
+> Last audited against Claude Code docs: 2026-10-17 (v2.1.302, mirror da8a6ce9)
 
 When a new skill involves more than a single pass of inline work — fan-out over many
 items, background execution, scheduled runs, enforcement — the most consequential
@@ -18,11 +18,11 @@ if the answer is "skill" (or a skill plus something) — pick an architecture be
 | A procedure you keep pasting into chat; Claude or the user triggers it | **Skill** (rule in a skill) | On demand; Claude may skip it — a description is a hint, not a guarantee | mods overview "Compare…" table (`plugins__mods__overview.md:198`); `features-overview.md:42` |
 | Must apply on *every* turn: conventions, facts, "always do X" | **CLAUDE.md** / rules | Loaded every session, no trigger risk | `features-overview.md:40` |
 | A voice, length or format for every reply, or Claude in a non-engineering role | **Output style** | Session-wide, not invoked | `features-overview.md:41` |
-| Block, allow or log an event with a script; must-happen / must-not-happen steps | **Classic (settings) hook** — or `hooks:` in skill frontmatter | Deterministic; stable API; exit 2 blocks on gate events. A hook that crashes, can't start or times out lets the action through unless a `command`/`http` hook sets `"onFailure": "block"` (v2.1.295+) — use it on policy gates | `plugins__mods__overview.md:198`; `hooks.md:904`; architecture 6 below |
+| Block, allow or log an event with a script; must-happen / must-not-happen steps | **Classic (settings) hook** — or `hooks:` in skill frontmatter | Deterministic; stable API; exit 2 blocks on gate events. A hook that crashes, can't start or times out lets the action through unless a `command`/`http` hook sets `"onFailure": "block"` (v2.1.295+) — use it on policy gates | `plugins__mods__overview.md:198`; `hooks.md:910`; architecture 6 below |
 | A pane or band in the UI, a `/command` that runs code with no Claude turn, rewriting a tool call, prompt or request | **Mod** (plugin of in-process handlers) | See mod limits below | `plugins__mods__overview.md:15-23,198` |
 | Claude needs to reach an external system (API, DB, browser) | **MCP server** | Gives Claude tools; a skill can then teach *how* to use them | `plugins__mods__overview.md:198`; `features-overview.md:47` |
 | Keep working until a verifiable condition holds | **`/goal`** (this session) or a **Stop hook** (every session in scope; script or prompt check) | Both fire after every turn; `/goal` adds a fresh evaluator model | `goal.md:18-28` |
-| Isolated heavy work that returns a summary | **Subagent** (architectures 2–3) | Own context; loses `AskUserQuestion` and `Workflow` | `features-overview.md:43`; `sub-agents.md:422-433` |
+| Isolated heavy work that returns a summary | **Subagent** (architectures 2–3) | Own context; loses `AskUserQuestion` and `Workflow` | `features-overview.md:43`; `sub-agents.md:426-437` |
 | Dozens–hundreds of agents, repeatable orchestration | **Workflow** (architecture 4) | The script holds the plan; no mid-run input | `workflows.md:18-28` |
 
 A plugin can carry a skill, hooks, an MCP server and a mod together, so these
@@ -68,7 +68,8 @@ conversation. One unit of work, no orchestration.
 As of v2.1.218 the fork runs in the **background by default**: the user keeps
 working and the result arrives when it completes. A backgrounded fork gets the
 narrower background-subagent tool set, and its edits land outside session
-checkpoints (`/rewind` can't undo them — git only). Set `background: false` when
+checkpoints (`/rewind` restores only files Claude had already edited in the
+conversation; the fork's other edits stay — git only). Set `background: false` when
 the skill needs the full tool set or checkpointed edits. Details:
 `references/frontmatter-reference.md` §5.
 
@@ -90,9 +91,11 @@ checkout) and its own subagent budget. The in-session conversation fork is
 `/subtask` (named `/fork` before v2.1.212). And the Agent tool's
 `subagent_type: "fork"` spawns a *subagent that inherits the full conversation
 and prompt cache* — this "fork mode" is on by default in interactive sessions
-since v2.1.232 and off by default in `-p`/headless and Agent SDK sessions
-(`CLAUDE_CODE_FORK_SUBAGENT=1`/`0` overrides either way). Don't design a skill
-around one expecting the semantics of another.
+since v2.1.232 and, since v2.1.302, also in `claude -p`, the Agent SDK, the
+desktop app and VS Code; `CLAUDE_CODE_FORK_SUBAGENT=0` turns it off, and
+`claude mcp serve` never offers it (changelog 2.1.302 — `sub-agents.md:1247` and
+`env-vars.md:309` still describe the old "off in `-p`/SDK" default). Don't design
+a skill around one expecting the semantics of another.
 
 ### 3. Direct subagents (hub-and-spoke)
 
@@ -109,7 +112,12 @@ Since v2.1.198 subagents run **in the background by default**: the hub keeps wor
 while they run and receives each result via a `<task-notification>` when it finishes.
 Design hub skills to process notifications as they arrive (and to persist anything
 the notification carries that isn't stored elsewhere, e.g. token/duration metrics)
-rather than assuming synchronous returns.
+rather than assuming synchronous returns. Since v2.1.302 the desktop app and VS Code
+always run the main conversation's subagents in the background, as the terminal
+does — Claude no longer chooses there. A subagent's **own** Agent calls (nested
+workers) in `claude -p`, the Agent SDK, the desktop app and VS Code run in the
+**foreground** by default, so a worker that spawns helpers waits for them
+(changelog 2.1.302).
 
 **Agent-tool limits** (these govern architecture 3; the Workflow tool in
 architecture 4 has its own, different caps):
@@ -233,8 +241,15 @@ Not an execution architecture but a layer over any of the others. A skill-declar
 `PreToolUse` command hook that exits with code 2 blocks the action and feeds its
 message back — deterministic where prose is only a hint; add `"onFailure": "block"`
 (v2.1.295+, `command`/`http` only) so a broken hook blocks instead of failing open
-(`hooks.md:904`). Use for must-happen /
-must-not-happen steps in any architecture. Caveat: a skill's hook is **not**
+(`hooks.md:910`). Use for must-happen /
+must-not-happen steps in any architecture. Three runtime limits to design around:
+`updatedInput` a `PreToolUse`/`PermissionRequest` hook returns is validated like
+Claude's own input — unknown keys are dropped, and input the tool rejects denies
+the call (v2.1.300); at most 12 `prompt`/`agent` hooks of one event run at a time,
+the rest wait their turn (v2.1.302); a hook that starts a background process must
+print its decision first and redirect that process's stdout/stderr, or the call is
+blocked with `refusing to honor the suspect capture` (`hooks.md:889-893`).
+Caveat: a skill's hook is **not**
 scoped to the invocation — it stays registered for the rest of the session. For a
 one-shot gate set `once: true`; for a standing one keep the `matcher`/`if` as
 narrow as the rule actually needs. See `references/frontmatter-reference.md` §6.

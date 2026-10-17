@@ -1,6 +1,6 @@
 # jadlis-skill-builder — конвенции репо
 
-Один плагин `jadlis-skill-builder` в корне (root-as-plugin, скиллы в `skills/`); раздаётся через хаб `jadlis`, легаси-`marketplace.json` со `skill-creator-plugin` оставлен ради режима `mode: marketplace` в CI, `renames` пуст — совместимости со старыми именами нет. `plugin-creator` с 1.1.0 живёт в отдельном репозитории `jadlis-plugin-creator`. Эти правила читает агент, который правит и коммитит репозиторий.
+Один плагин `jadlis-skill-builder` в корне (root-as-plugin, скиллы в `skills/`); раздаётся через хаб `jadlis`, легаси-`marketplace.json` со `skill-creator-plugin` оставлен ради режима `mode: marketplace` в CI, `renames` пуст — совместимости со старыми именами нет. Упаковка живёт в соседнем плагине `plugin-builder` (команда `/plugin-builder`, репозиторий `jadlis-plugin-builder`; до переименования — `plugin-creator`). Эти правила читает агент, который правит и коммитит репозиторий.
 
 ## Коммиты
 
@@ -45,5 +45,5 @@ claude plugin validate .claude-plugin/marketplace.json
 ## Разработка
 
 - Правки только в рабочем клоне, никогда в `~/.claude/plugins/marketplaces/` — фоновый рефреш стирает их вместе с локальными ветками.
-- Роли не смешивать: содержание скиллов — зона `skill-builder`, упаковка и релизы — `plugin-creator` (свой репозиторий).
+- Роли не смешивать: содержание скиллов — зона `skill-builder`, упаковка и релизы — `plugin-builder` (свой репозиторий).
 - Язык доков — русский (RU-файл первичен), код и идентификаторы — английский.

@@ -12,10 +12,10 @@ the SYNC facts below — the one file that could drift silently.)
 
 | File | Last audited | CC version |
 |---|---|---|
-| `references/frontmatter-reference.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
-| `references/orchestration-guide.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
-| `references/agent-authoring.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
-| `references/plugin-packaging.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
+| `references/frontmatter-reference.md` | 2026-10-17 | v2.1.302 (mirror da8a6ce9) |
+| `references/orchestration-guide.md` | 2026-10-17 | v2.1.302 (mirror da8a6ce9) |
+| `references/agent-authoring.md` | 2026-10-17 | v2.1.302 (mirror da8a6ce9) |
+| `references/plugin-packaging.md` | 2026-10-17 | v2.1.302 (mirror da8a6ce9) |
 | `references/skill-lifecycle.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
 | `references/environments.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
 | `references/sandboxing.md` | 2026-10-14 | v2.1.300 (mirror 305bb5ef) |
@@ -29,6 +29,17 @@ The 2026-10-14 audit read the mirror's changelog 2.1.288–2.1.299 in full (the 
 has no 2.1.297, 2.1.298 or 2.1.300 entry; the installed CLI is 2.1.300). Facts the docs
 pages don't carry yet — agent `autoCompactWindow` bounds, the eval case field
 `disallowed_tools` — were read from `claude plugin eval --help` and the 2.1.300 CLI.
+The 2026-10-17 audit read the mirror's changelog 2.1.301–2.1.302 in full and the
+diff 305bb5ef..da8a6ce9 of `skills.md`, `sub-agents.md`, `hooks.md` and
+`plugins__components.md` (installed CLI 2.1.302). It re-dated only the four marked
+files it touched; the rest keep their 2026-10-14 marker. The docs pages lag the
+changelog on one fact: `sub-agents.md:1247` and `env-vars.md:309` still say fork
+mode is off by default in `-p`/Agent SDK, while changelog 2.1.302 turns it on there
+(plus desktop and VS Code) — the references follow the changelog. Two more facts
+live only in the changelog: the 64-name / 64-char argument limit (2.1.301) and the
+12-at-a-time cap on `prompt`/`agent` hooks of one event (2.1.302); `updatedInput`
+validation (2.1.300) is likewise changelog-only. `autoCompactWindow` is now in the
+`sub-agents.md` field table (`:313`), so the CLI-only caveat is gone.
 
 ## SYNC registry — facts duplicated across files
 
@@ -40,7 +51,7 @@ When the fact changes, update the canon first, then every mirror.
 | 1,536-char cap on combined `description` + `when_to_use` (`skillListingMaxDescChars`) | `frontmatter-reference.md` §1 `description` row | `frontmatter-reference.md` §7; `SKILL.md` (Frontmatter, Context Budget); `schemas.md` (frontmatter block); `description-optimization.md` (checklist); `quick_validate.py` (limit + error text); `init_skill.py` (template comment); `improve_description.py` (budget math + prompt text) |
 | Scheduled-task footgun: `disable-model-invocation: true` blocks cron runs (v2.1.196) | `orchestration-guide.md` §7 (architecture 7 footgun) | `frontmatter-reference.md` §1 + §2; `SKILL.md` (Invocation control); `schemas.md`; `house-style.md`; `creation-interview.md` |
 | Reserved / built-in command names to avoid (incl. `design` v2.1.234+, `workflow-authoring` v2.1.248+, aliases `checkup`/`proactive`); names that don't load (`anthropic-skills[:*]`, folder `synced`); `verify` runs before every commit (v2.1.286) | `description-optimization.md` §"Naming the skill" | `SKILL.md` (Frontmatter `name` bullet — pointer only, no list); `environments.md` (synced skills); `quick_validate.py` (reserved-name checks) |
-| Fork background default + narrower tool set + `/rewind` gap (v2.1.218) | `frontmatter-reference.md` §5 | `frontmatter-reference.md` §1 (`context`/`background` rows); `orchestration-guide.md` (architectures 2, 3); `SKILL.md` (Orchestration); `schemas.md`; `init_skill.py` |
+| Fork background default + narrower tool set + `/rewind` gap (v2.1.218; since mirror da8a6ce9 rewind restores only files Claude had already edited) | `frontmatter-reference.md` §5 | `frontmatter-reference.md` §1 (`context`/`background` rows); `orchestration-guide.md` (architectures 2, 3); `SKILL.md` (Orchestration); `schemas.md`; `init_skill.py` |
 | Agent-tool limits: 20 concurrent / depth 3; no per-session total (the 200 cap was removed in v2.1.224, `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION` is a no-op) | `orchestration-guide.md` (architecture 3) | — (Workflow-tool 16/1,000 caps are a *different* fact, same file, architecture 4) |
 | Skill-declared hooks live to the END of the session (registered on invocation; only `once: true` removes one early, after its first *successful* run) | `frontmatter-reference.md` §6 | `frontmatter-reference.md` §1 (`hooks` row); `SKILL.md` (optional-field list); `schemas.md`; `orchestration-guide.md` (architecture 6 caveat); `creation-interview.md` (Stage 4 guardrails); `init_skill.py` (template comment) |
 | Portability allowlist: outside Claude Code only `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`; any other field = hard error on upload/packaging | `frontmatter-reference.md` §1.1 | `schemas.md` (`[portable]` tags); `environments.md` (Cowork/cloud); `quick_validate.py` (CC-mode warning / `--portable` hard error); `package_skill.py` (packaging gate); `init_skill.py` (template comment); `SKILL.md` (portability paragraph) |
