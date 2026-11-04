@@ -138,6 +138,8 @@ house conventions; upstream itself, by the notes in this repository, has been fr
 
 **Verified where I work:** my Mac, my subscription. Where else this works — [уточнить].
 
+**Source.** The plugin's repository: [github.com/becyb-org/jadlis-skill-builder](https://github.com/becyb-org/jadlis-skill-builder). The install commands above take the catalog from the hub on GitLab.
+
 **Terms of use.** A fork of an official Anthropic plugin, licensed Apache-2.0 — the text is in the
 [LICENSE](LICENSE) file.
 

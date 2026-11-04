@@ -1,6 +1,6 @@
 # Choosing an Orchestration Architecture
 
-> Last audited against Claude Code docs: 2026-10-17 (v2.1.302, mirror da8a6ce9)
+> Last audited against Claude Code docs: 2026-11-04 (v2.1.318, mirror 8f02c497)
 
 When a new skill involves more than a single pass of inline work — fan-out over many
 items, background execution, scheduled runs, enforcement — the most consequential
@@ -15,15 +15,15 @@ if the answer is "skill" (or a skill plus something) — pick an architecture be
 
 | The need | Form | Why / limits | Docs |
 |---|---|---|---|
-| A procedure you keep pasting into chat; Claude or the user triggers it | **Skill** (rule in a skill) | On demand; Claude may skip it — a description is a hint, not a guarantee | mods overview "Compare…" table (`plugins__mods__overview.md:198`); `features-overview.md:42` |
+| A procedure you keep pasting into chat; Claude or the user triggers it | **Skill** (rule in a skill) | On demand; Claude may skip it — a description is a hint, not a guarantee | mods overview "Compare…" table (`plugins__mods__overview.md:205-215`); `features-overview.md:42` |
 | Must apply on *every* turn: conventions, facts, "always do X" | **CLAUDE.md** / rules | Loaded every session, no trigger risk | `features-overview.md:40` |
 | A voice, length or format for every reply, or Claude in a non-engineering role | **Output style** | Session-wide, not invoked | `features-overview.md:41` |
-| Block, allow or log an event with a script; must-happen / must-not-happen steps | **Classic (settings) hook** — or `hooks:` in skill frontmatter | Deterministic; stable API; exit 2 blocks on gate events. A hook that crashes, can't start or times out lets the action through unless a `command`/`http` hook sets `"onFailure": "block"` (v2.1.295+) — use it on policy gates | `plugins__mods__overview.md:198`; `hooks.md:910`; architecture 6 below |
-| A pane or band in the UI, a `/command` that runs code with no Claude turn, rewriting a tool call, prompt or request | **Mod** (plugin of in-process handlers) | See mod limits below | `plugins__mods__overview.md:15-23,198` |
-| Claude needs to reach an external system (API, DB, browser) | **MCP server** | Gives Claude tools; a skill can then teach *how* to use them | `plugins__mods__overview.md:198`; `features-overview.md:47` |
+| Block, allow or log an event with a script; must-happen / must-not-happen steps | **Classic (settings) hook** — or `hooks:` in skill frontmatter | Deterministic; stable API; exit 2 blocks on gate events. A hook that crashes, can't start or times out lets the action through unless a `command`/`http` hook sets `"onFailure": "block"` (v2.1.295+) — use it on policy gates | `plugins__mods__overview.md:205-215`; `hooks.md:902-904`; architecture 6 below |
+| A pane or band in the UI, a `/command` that runs code with no Claude turn, rewriting a tool call, prompt or request | **Mod** (plugin of in-process handlers) | See mod limits below | `plugins__mods__overview.md:15-23,205-215` |
+| Claude needs to reach an external system (API, DB, browser) | **MCP server** | Gives Claude tools; a skill can then teach *how* to use them | `plugins__mods__overview.md:205-215`; `features-overview.md:47` |
 | Keep working until a verifiable condition holds | **`/goal`** (this session) or a **Stop hook** (every session in scope; script or prompt check) | Both fire after every turn; `/goal` adds a fresh evaluator model | `goal.md:18-28` |
-| Isolated heavy work that returns a summary | **Subagent** (architectures 2–3) | Own context; loses `AskUserQuestion` and `Workflow` | `features-overview.md:43`; `sub-agents.md:426-437` |
-| Dozens–hundreds of agents, repeatable orchestration | **Workflow** (architecture 4) | The script holds the plan; no mid-run input | `workflows.md:18-28` |
+| Isolated heavy work that returns a summary | **Subagent** (architectures 2–3) | Own context; loses `AskUserQuestion` and `Workflow` | `features-overview.md:43`; `sub-agents.md:429-438` |
+| Dozens–hundreds of agents, repeatable orchestration | **Workflow** (architecture 4) | The script holds the plan; no mid-run input | `workflows.md:17-28` |
 
 A plugin can carry a skill, hooks, an MCP server and a mod together, so these
 compose: an MCP server for access, a skill for the procedure, a hook for the hard
@@ -34,11 +34,11 @@ rule.
 - Requires Claude Code **v2.1.287+** (changelog 2.1.287, "Added Claude Mods").
 - **Fails open.** A handler that throws, times out (10 s of its own running time per
   event) or returns the wrong shape is skipped and the event proceeds, unless the mod
-  wrote a `.catch` handler (`plugins__mods__events.md:280-283`,
-  `plugins__mods__reference.md:245`). A mod guard is a seatbelt, not a lock — for a
+  wrote a `.catch` handler (`plugins__mods__events.md:430-435`,
+  `plugins__mods__reference.md:378`). A mod guard is a seatbelt, not a lock — for a
   hard rule prefer a classic `PreToolUse` hook with `exit 2`.
 - **Not sandboxed.** A mod runs with the permissions of the user who installed it,
-  with the user's access to files, processes and network (`plugins__mods__admin.md:9,84`).
+  with the user's access to files, processes and network (`plugins__mods__admin.md:9,88`).
   Never install a third-party mod unread.
 - **Can't patch skills yet.** The `skill.prompt` event is not delivered as of
   v2.1.287 (anthropics/claude-code#96831, open) — rewriting a third-party skill's
@@ -90,12 +90,15 @@ runs a *skill* in a subagent. The `/fork` command starts a separate background
 checkout) and its own subagent budget. The in-session conversation fork is
 `/subtask` (named `/fork` before v2.1.212). And the Agent tool's
 `subagent_type: "fork"` spawns a *subagent that inherits the full conversation
-and prompt cache* — this "fork mode" is on by default in interactive sessions
-since v2.1.232 and, since v2.1.302, also in `claude -p`, the Agent SDK, the
-desktop app and VS Code; `CLAUDE_CODE_FORK_SUBAGENT=0` turns it off, and
-`claude mcp serve` never offers it (changelog 2.1.302 — `sub-agents.md:1247` and
-`env-vars.md:309` still describe the old "off in `-p`/SDK" default). Don't design
-a skill around one expecting the semantics of another.
+and prompt cache* — this "fork mode" is on by default in interactive terminal
+sessions since v2.1.232 and everywhere else since v2.1.302 (`claude -p`, the Agent
+SDK, the desktop app, VS Code); `CLAUDE_CODE_FORK_SUBAGENT=0` turns it off, a
+`permissions.deny` entry `"Agent(fork)"` stops forks only, and `claude mcp serve`
+never offers it (`sub-agents.md:1271-1278`; `env-vars.md:303`; changelog 2.1.302).
+Since v2.1.307 forks launched together are each told which launch is their own, so
+they are much less likely to start each other's work (`changelog.md:752`) — on
+older versions give parallel forks explicitly disjoint briefs. Don't design a skill
+around one expecting the semantics of another.
 
 ### 3. Direct subagents (hub-and-spoke)
 
@@ -165,6 +168,14 @@ deterministic in structure, budget-scaled loops. The hard constraint: **a workfl
 accepts no mid-run user input** — only permission prompts can pause it. Anything
 interactive must happen in Phase A or C. Unlike a subagent fan-out, an interrupted
 run is **resumable in the same session** — the runtime tracks each agent's result.
+On a relaunch Claude Code replays the run in start order: a completed agent returns
+its saved result unless its prompt changed or an earlier agent's result did, and a
+failed agent reruns together with every agent started after it, completed or not
+(`workflows.md:366-380`). Two resume bugs are fixed: before v2.1.305 completed
+`pipeline()` and `parallel()` agents could rerun on a relaunch of an unedited script
+(`workflows.md:376`; `changelog.md:833`), and before v2.1.318 a run resumed after a
+usage limit could rerun finished agents (`changelog.md:93`; docs not yet updated).
+On older versions keep stage outputs on disk so a rerun can skip work.
 
 **Ultracode changes the picture for inline skills.** With ultracode on (`/effort
 ultracode`, the `ultracode` setting, `--effort ultracode`), Claude plans a workflow
@@ -241,14 +252,19 @@ Not an execution architecture but a layer over any of the others. A skill-declar
 `PreToolUse` command hook that exits with code 2 blocks the action and feeds its
 message back — deterministic where prose is only a hint; add `"onFailure": "block"`
 (v2.1.295+, `command`/`http` only) so a broken hook blocks instead of failing open
-(`hooks.md:910`). Use for must-happen /
+(`hooks.md:902-904`). Agent SDK hook callbacks take `onFailure: "block"` too since
+v2.1.317, so a callback that fails blocks the action instead of letting it run
+(`changelog.md:121`; docs not yet updated). Use for must-happen /
 must-not-happen steps in any architecture. Three runtime limits to design around:
 `updatedInput` a `PreToolUse`/`PermissionRequest` hook returns is validated like
 Claude's own input — unknown keys are dropped, and input the tool rejects denies
-the call (v2.1.300); at most 12 `prompt`/`agent` hooks of one event run at a time,
-the rest wait their turn (v2.1.302); a hook that starts a background process must
-print its decision first and redirect that process's stdout/stderr, or the call is
-blocked with `refusing to honor the suspect capture` (`hooks.md:889-893`).
+the call (v2.1.300); `prompt`/`agent` hooks run with a concurrency cap — per the
+docs 12 of one event at once, the rest waiting their turn (`hooks.md:398`), per
+changelog 2.1.312 at most 24 at a time per session, subagents included, plus 12 that
+waited past their timeout, with a `timeout` under 1 s counted as 1 s
+(`changelog.md:439`; docs not yet updated); a hook that starts a background process
+must print its decision first and redirect that process's stdout/stderr, or the
+call is blocked with `refusing to honor the suspect capture` (`hooks.md:881-885`).
 Caveat: a skill's hook is **not**
 scoped to the invocation — it stays registered for the rest of the session. For a
 one-shot gate set `once: true`; for a standing one keep the `matcher`/`if` as
@@ -263,7 +279,8 @@ disallowed-tools: AskUserQuestion   # nobody is there to answer
 ```
 
 **Footgun (v2.1.196):** do NOT set `disable-model-invocation: true` on a scheduled
-skill — it now also blocks the scheduled task from running the skill. Constrain
+skill — it now also blocks a session-scoped scheduled task from running the skill
+(`skills.md:402`). Constrain
 triggering with a narrow `description` and `disallowed-tools` instead.
 
 Design in an **anti-stub guard**: an unattended run that finds no fresh input must

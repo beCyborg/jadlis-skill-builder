@@ -1,6 +1,6 @@
 # jadlis-skill-builder — конвенции репо
 
-Один плагин `jadlis-skill-builder` в корне (root-as-plugin, скиллы в `skills/`); раздаётся через хаб `jadlis`, легаси-`marketplace.json` со `skill-creator-plugin` оставлен ради режима `mode: marketplace` в CI, `renames` пуст — совместимости со старыми именами нет. Упаковка живёт в соседнем плагине `plugin-builder` (команда `/plugin-builder`, репозиторий `jadlis-plugin-builder`; до переименования — `plugin-creator`). Эти правила читает агент, который правит и коммитит репозиторий.
+Один плагин `jadlis-skill-builder` в корне (root-as-plugin, скиллы в `skills/`); основной дом репозитория — `https://github.com/becyb-org/jadlis-skill-builder`, соседние репозитории — `https://github.com/becyb-org/<repo>`; раздаётся через хаб `jadlis` (команды установки берут его адрес `https://gitlab.com/beCyborg/jadlis-hub.git`), легаси-`marketplace.json` со `skill-creator-plugin` оставлен ради режима `mode: marketplace` в CI, `renames` пуст — совместимости со старыми именами нет. Упаковка живёт в соседнем плагине `plugin-builder` (команда `/plugin-builder`, репозиторий `https://github.com/becyb-org/jadlis-plugin-builder`; до переименования — `plugin-creator`). Эти правила читает агент, который правит и коммитит репозиторий.
 
 ## Коммиты
 

@@ -1,6 +1,6 @@
 # Sandboxing Notes for Skill Authors
 
-> Last audited against Claude Code docs: 2026-10-14 (v2.1.300, mirror 305bb5ef)
+> Last audited against Claude Code docs: 2026-11-04 (v2.1.318, mirror 8f02c497)
 
 Why this matters: **a skill that runs bash must not assume it has network access
 or an unrestricted filesystem.** The user's sandbox settings decide, not the
@@ -30,6 +30,29 @@ hanging or silently producing empty output.
   while keeping network egress control. The inverse also holds — filesystem
   isolation may be ON, so a skill's script must not assume it can write outside
   the working directory.
+- **`sandbox.excludedCommands` matches the whole call** (v2.1.314 corrected the
+  setting's description): a Bash or Monitor call leaves the sandbox only when an
+  entry covers **every** command in it — `npm ci && docker compose build` stays
+  sandboxed under a lone `docker compose *` entry (`sandboxing.md:326-330`;
+  `changelog.md:365`). A skill step that chains a setup command in front of an
+  excluded tool runs sandboxed; split the call. Since v2.1.309 an excluded command
+  asks before writing to the sandbox's write-list paths while the sandbox is enabled
+  but can't run, and the unsandboxed fallback is refused there (`changelog.md:642`).
+- **Shell startup files (v2.1.309+):** on macOS and Linux a sandboxed Bash command's
+  shell startup files now run inside the sandbox too, not outside it before each
+  command (`changelog.md:659`). A skill that relied on a profile reaching outside
+  the sandbox loses that.
+- **`sandbox.allowNestedUserNamespaces`** (v2.1.305+, Linux/WSL2, user or managed
+  settings only): lets sandboxed commands create user namespaces, which Chromium and
+  rootless podman need — and lets them get around the sandbox's file protections
+  (`sandboxing.md:562`; `changelog.md:800`). A skill that drives headless Chromium on
+  Linux may need it; say so rather than ask for the sandbox off.
+- **`permissions.blockWritesOutsideWorkingDirectories`** (v2.1.314+): `Write`,
+  `Edit` and `NotebookEdit` refuse paths outside the working directories in every
+  permission mode, `bypassPermissions` included; shell commands, MCP tools and hook
+  programs are not limited by it (`settings-reference.md:1097-1099`;
+  `changelog.md:293`). A skill that writes its report to `~/` or `/tmp` with the
+  file tools fails there — write inside the project, or `/add-dir` the target.
 
 ## Authoring rules
 

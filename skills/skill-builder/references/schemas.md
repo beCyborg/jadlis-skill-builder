@@ -1,6 +1,6 @@
 # JSON Schemas
 
-> Last audited against Claude Code docs: 2026-10-14 (v2.1.300, mirror 305bb5ef)
+> Last audited against Claude Code docs: 2026-11-04 (v2.1.318, mirror 8f02c497)
 
 This document defines the JSON schemas used by skill-builder.
 
@@ -46,32 +46,32 @@ Frontmatter is read only when the opening `---` is the file's first line.
 ```yaml
 ---
 # Recommended
-description: string       # [portable] combined with when_to_use, truncated at 1,536 chars. Primary trigger mechanism. Angle brackets are escaped by Claude Code, not rejected — but avoid them.
+description: string       # [portable] combined with when_to_use, truncated at 1,536 chars. Primary trigger mechanism. Angle brackets are escaped by Claude Code, not rejected, and display as &lt; / &gt; — write [placeholder] or use argument-hint.
 
 # Optional - Identity
-name: string              # [portable] command name; defaults to the directory name. In a personal/project skill name sets the /command AND the directory name also invokes it (name ≠ folder is legal in Claude Code; keep them equal only for the portable path). In a plugin skill under skills/, name replaces the command's LAST SEGMENT and the plugin prefix stays (name: fancy -> /my-plugin:fancy; not doubled if it already carries the prefix, v2.1.246+); in a plugin-root SKILL.md it supplies the whole final segment. Kebab-case + 64-char cap come from the Agent Skills spec (agentskills.io), not skills.md — they bind on the portable path.
+name: string              # [portable] command name; defaults to the directory name. In a personal/project skill name sets the /command AND the directory name also invokes it (name ≠ folder is legal in Claude Code; keep them equal only for the portable path). In a plugin skill under skills/, name replaces the command's LAST SEGMENT and the plugin prefix stays (name: fancy -> /my-plugin:fancy; not doubled if it already carries the prefix, v2.1.246+); in a plugin-root SKILL.md it supplies the whole final segment. An --add-dir skill whose name clashes runs as /<folder>:<name> (v2.1.309+). Kebab-case + 64-char cap come from the Agent Skills spec (agentskills.io), not skills.md — they bind on the portable path.
 when_to_use: string       # additional trigger context; appended to description (counts toward the 1,536-char cap)
 
 # Optional - Invocation Control
 argument-hint: string     # autocomplete hint (e.g., "[file-path]")
 arguments: string|list   # named positional arguments for $name substitution
-disable-model-invocation: boolean  # default false; true = user-only. Also blocks preloading into a subagent's skills: field AND scheduled-task invocation (v2.1.196+).
+disable-model-invocation: boolean  # default false; true = user-only. Also blocks preloading into a subagent's skills: field AND invocation by a session-scoped scheduled task (v2.1.196+).
 user-invocable: boolean   # default true; false = Claude-only (hidden from / menu)
 
 # Optional - Execution
 allowed-tools: string|list  # [portable] pre-approve tools (no permission prompt) for the INVOKING TURN; the grant clears on the next user message. e.g. "Bash Read" or ["Bash", "Read"]. Supports patterns: "Bash(gh *)". Does NOT restrict the tool pool. Workspace trust does NOT gate this field.
 disallowed-tools: string|list  # remove tools from the model while active, e.g. "AskUserQuestion". Clears on the next user message. (v2.1.152+)
 model: string             # model override; accepts /model values or "inherit"; turn-scoped (not saved — session model resumes next prompt)
-effort: enum              # low | medium | high | xhigh | max (available levels depend on the model)
+effort: enum              # low | medium | high | xhigh | max (available levels depend on the model); rest of the current turn, or the fork's run with context: fork; never above CLAUDE_CODE_EFFORT_LEVEL / maxEffortLevel
 context: enum             # fork (runs in subagent context)
 agent: string             # subagent type when context: fork (Explore, Plan, general-purpose, or a custom agent)
 background: boolean       # only with context: fork; default true (fork runs in background). false = wait for the result in the invoking turn. (v2.1.218+)
-paths: string | list      # glob patterns limiting activation (e.g., "*.py, src/**")
+paths: string | list      # glob patterns limiting activation (e.g., "*.py, src/**"); relative to the current working directory, files outside it never match
 shell: enum               # bash (default) | powershell
 # boolean fields accept yes/no/on/off/1/0 in any case, besides true/false (v2.1.218+)
 
 # Optional - Lifecycle
-hooks: object             # registered on invocation, KEPT FOR THE REST OF THE SESSION (any of the 33 events). `once: true` removes a hook after its first SUCCESSFUL run.
+hooks: object             # registered on invocation, KEPT FOR THE REST OF THE SESSION (any of the 33 events). `once: true` removes a hook after its first SUCCESSFUL run. Per source and session: at most 1,024 hooks / 16,384 matcher chars, else the skill registers none (v2.1.304+). A plugin-only hooks policy drops a personal/project skill's hooks AND its allowed-tools grant.
 
 # Optional - Metadata
 license: string           # [portable] license covering the skill; Claude Code accepts but doesn't act on it

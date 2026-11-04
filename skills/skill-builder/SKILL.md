@@ -149,7 +149,7 @@ Based on interview, fill in the required fields and relevant optional fields:
 
 **Invocation control**: By default, both user and Claude can invoke a skill. Set `disable-model-invocation: true` for user-only skills (e.g., dangerous operations; also blocks preload into subagents and scheduled-task runs). Set `user-invocable: false` for Claude-only background knowledge skills that shouldn't appear in the `/` menu. Matrix and takeaways: `references/frontmatter-reference.md` §2.
 
-Skills are discovered from `.claude/skills/` in the starting directory and every parent directory up to the repo root. Directories added via `--add-dir` also have their `.claude/skills/` loaded automatically. Useful for monorepo setups.
+Skills are discovered from `.claude/skills/` in the starting directory and every parent directory up to the repo root. Directories added via `--add-dir` also have their `.claude/skills/` loaded automatically; when an added skill's name clashes with an existing one it runs as `/<folder>:<name>` (v2.1.309+, `references/frontmatter-reference.md` §1 `name` row). Useful for monorepo setups.
 
 ### skillOverrides (settings-based visibility)
 
@@ -255,7 +255,7 @@ Skills can embed shell command output directly into their content at load time. 
 
 ### Reasoning depth (effort, not ultrathink)
 
-`ultrathink` in a user prompt asks for deeper reasoning on that one turn (a Claude Code keyword; "think hard" is plain text). On Opus 5.5 and Fable thinking is always on — for a skill, set depth with `effort:` in frontmatter, not with prompt lines. See `references/frontmatter-reference.md` for details, and `references/model-routing.md` for choosing the level (and why `model:` on an inline skill costs a cache rebuild while `effort:` usually doesn't).
+`ultrathink` in a user prompt asks for deeper reasoning on that one turn (a Claude Code keyword; "think hard" is plain text): Claude Code always adds an in-context instruction, and since v2.1.311 the word typed at the interactive terminal (VS Code since v2.1.316) can also raise that turn to `xhigh` — only on Opus 5.5, Sonnet 5.5, Haiku 5.5 or Fable 5.1 through Anthropic's API, not on Bedrock and never above `CLAUDE_CODE_EFFORT_LEVEL` or `maxEffortLevel`; the session level stays unchanged. On Opus 5.5 and Fable thinking is always on — for a skill, set depth with `effort:` in frontmatter, not with prompt lines. See `references/frontmatter-reference.md` for details, and `references/model-routing.md` for choosing the level (and why `model:` on an inline skill costs a cache rebuild while `effort:` usually doesn't).
 
 ### Skills as Subagents
 

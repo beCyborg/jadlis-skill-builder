@@ -11,7 +11,7 @@ Before optimizing, get the basics right — these prevent most "my skill never f
 - **State both what AND when.** All "when to use" information lives in the `description`/`when_to_use`, never only in the body — the body loads *after* Claude has already decided to trigger.
 - **Scope over-broad triggers.** A vague description ("checks content quality") fires on everything (package.json, README, JSON). Add file-type + directory + action scope ("checks markdown files in `drafts/` when writing or editing article content") so it fires only when relevant. Test descriptions for false positives, not just the happy path.
 - **Add use-when / don't-use-when examples** to the `description`/`when_to_use` for skills that overlap with others — positive *and* near-miss negative examples sharpen routing, especially for cheaper models.
-- **Keep it one line.** A multi-line YAML description can be mis-parsed so the skill silently disappears from the listing. Avoid angle brackets — Claude Code escapes `<>` in the text that reaches Claude rather than rejecting them, but escaped markup only burns trigger budget. Front-load regardless of the 1,536-char combined cap.
+- **Keep it one line.** A multi-line YAML description can be mis-parsed so the skill silently disappears from the listing. Avoid angle brackets — Claude Code escapes `<>` in the text that reaches Claude rather than rejecting them, and shows `<` and `>` in `description` and `when_to_use` as `&lt;` and `&gt;` (`skills.md:1232-1234`); escaped markup only burns trigger budget. For a placeholder such as `<branch>` write `[branch]`, or put it in `argument-hint`. Front-load regardless of the 1,536-char combined cap.
 
 ### Naming the skill
 

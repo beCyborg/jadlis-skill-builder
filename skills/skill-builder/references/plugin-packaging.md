@@ -1,6 +1,6 @@
 # Distributing a Skill as a Plugin
 
-> Last audited against Claude Code docs: 2026-10-17 (v2.1.302, mirror da8a6ce9)
+> Last audited against Claude Code docs: 2026-11-04 (v2.1.318, mirror 8f02c497)
 
 `python -m scripts.package_skill` produces a `.skill` file — the quick path for handing one skill to one person. For anything that needs to be **shared with teammates, versioned, updated over time, or published**, wrap the skill in a **plugin** inside a **marketplace**. (This skill ships exactly that way.)
 
@@ -52,11 +52,11 @@ A plugin with a **root-level `SKILL.md`**, no `skills/` subdir **and no `skills`
 ```
 
 - `$schema` is `https://json.schemastore.org/claude-code-plugin-manifest.json` (v2.1.120+). Claude Code **ignores it at load time** — it is for editor autocomplete only, not a CI gate (the published schemas lag the CLI).
-- `themes` and `monitors` must be nested under `"experimental": { ... }` (top-level still works but warns).
+- `themes` and `monitors` must be nested under `"experimental": { ... }` (top-level still works but warns). Plugin monitors don't start under `-p`; on Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform or Microsoft Foundry, or with `DISABLE_TELEMETRY` / `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set, they need v2.1.310+ (`plugins__components.md:587-588`; `changelog.md:591`).
 - `defaultEnabled: false` (v2.1.154+) ships the plugin disabled; users enable it with `/plugin` or `claude plugin enable`. Dependencies of enabled plugins stay enabled automatically. A `defaultEnabled` in the marketplace entry overrides the manifest value.
-- `userConfig` declares values Claude Code prompts for at enable time, substituted as `${user_config.KEY}` and exported to hooks as `CLAUDE_PLUGIN_OPTION_<KEY>`. Shell-executed fields reject the substitution. Full canon: the `plugin-builder` plugin (`/plugin-builder`, repo `gitlab.com/beCyborg/jadlis-plugin-builder`).
+- `userConfig` declares values Claude Code prompts for at enable time, substituted as `${user_config.KEY}` and exported to hooks as `CLAUDE_PLUGIN_OPTION_<KEY>`. Shell-executed fields reject the substitution. Full canon: the `plugin-builder` plugin (`/plugin-builder`, repo `https://github.com/becyb-org/jadlis-plugin-builder`).
 - `dependencies` declares plugin→plugin requirements, optionally with semver ranges resolved against git tags named `{plugin-name}--v{version}` — without those tags a constraint can't resolve.
-- Plugin **agents** support only `name`, `description`, `model`, `effort`, `maxTurns`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, `isolation` (`"worktree"` only), `color`, and the `cacheTtl` key of `experimental`. `permissionMode`, `hooks`, `mcpServers`, and `initialPrompt` are **ignored** in plugin-shipped agents — ship hooks and MCP servers as plugin components instead. An agent file whose frontmatter doesn't parse still loads, with every field ignored and a generic description.
+- Plugin **agents** support only `name`, `description`, `model`, `effort`, `maxTurns`, `autoCompactWindow`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, `isolation` (`"worktree"` only), `color`, and the `cacheTtl` key of `experimental`. `permissionMode`, `hooks`, `mcpServers`, and `initialPrompt` are **ignored** in plugin-shipped agents — ship hooks and MCP servers as plugin components instead. An agent file whose frontmatter doesn't parse still loads, with every field ignored and a generic description.
 
 ## Path variables
 
@@ -115,12 +115,12 @@ A plugin can also carry a **mod** — TypeScript/JavaScript event handlers Claud
 
 ## Distribution notes
 
-- **One-command install (v2.1.292+):** `claude plugin install <plugin> --marketplace <source>` adds the marketplace if it isn't added yet (same policy checks as `claude plugin marketplace add`), then installs the plugin from it. `<plugin>` is the bare name, without `@marketplace`; `<source>` takes the `marketplace add` forms — `owner/repo`, a git or https URL, or a path (`plugins__cli-reference.md:88`; `plugins__publish.md:116`). The in-session `/plugin install <plugin> --marketplace <source>` needs only v2.1.275+. Put this line first in a README and keep `claude plugin marketplace add <source>` + `claude plugin install <plugin>@<marketplace>` below it for older versions. If the fetched catalog has the name of a marketplace already added from another source, the existing one is kept and nothing is installed (`plugins__troubleshooting.md:605`).
-- `claude plugin init <name>` scaffolds a plugin into `~/.claude/skills/<name>/`; it loads next session as `<name>@skills-dir` with no marketplace and no install step — the cheapest development loop.
+- **One-command install (v2.1.292+):** `claude plugin install <plugin> --marketplace <source>` adds the marketplace if it isn't added yet (same policy checks as `claude plugin marketplace add`), then installs the plugin from it. `<plugin>` is the bare name, without `@marketplace`; `<source>` takes the `marketplace add` forms — `owner/repo`, a git or https URL, or a path (`plugins__cli-reference.md:88`; `plugins__publish.md:114`). The in-session `/plugin install <plugin> --marketplace <source>` needs only v2.1.275+. Put this line first in a README and keep `claude plugin marketplace add <source>` + `claude plugin install <plugin>@<marketplace>` below it for older versions. If the fetched catalog has the name of a marketplace already added from another source, the existing one is kept and nothing is installed (`plugins__troubleshooting.md:531`).
+- `claude plugin init <name>` scaffolds a plugin into `~/.claude/skills/<name>/`; it loads next session as `<name>@skills-dir` with no marketplace and no install step — the cheapest development loop. In an organization with managed settings such a folder can be skipped with no error: `strictPluginOnlyCustomization` locking any kind of customization, or a `strictKnownMarketplaces` allowlist without `{ "source": "skills-dir" }` (or a `blockedMarketplaces` entry with it), drops the whole plugin — `/plugin` shows nothing (`plugins__loading.md:95-102`). Ship to such users through a marketplace.
 - Test a local plugin with `--plugin-dir <path>` (accepts a `.zip`), or fetch one for a session with `--plugin-url <url>`.
 - `skipLfs` on `github`/`git` marketplace sources skips Git LFS during clone/update; `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` helps environments without SSH keys.
 - `claude plugin prune` (and `uninstall --prune`) removes orphaned auto-installed dependencies.
 
 ---
 
-> Deep marketplace operations (sources, headersHelper, renames, release channels, org distribution) are covered by the `plugin-builder` plugin (`/plugin-builder`, repo `gitlab.com/beCyborg/jadlis-plugin-builder`); this file stays a minimal packaging guide.
+> Deep marketplace operations (sources, headersHelper, renames, release channels, org distribution) are covered by the `plugin-builder` plugin (`/plugin-builder`, repo `https://github.com/becyb-org/jadlis-plugin-builder`); this file stays a minimal packaging guide.
