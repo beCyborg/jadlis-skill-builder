@@ -7,13 +7,13 @@ architecture is chosen, a draft is written, test prompts are run against it, and
 reworked until the skill starts firing on its own.
 
 ```
-claude plugin install jadlis-skill-builder --marketplace https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin install jadlis-skill-builder --marketplace https://github.com/beCyborg/jadlis-hub.git
 ```
 
 Claude Code older than 2.1.292 has no `--marketplace` flag. Then install with two commands:
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 ```
 
@@ -67,7 +67,7 @@ keeps the registry of facts duplicated across files together with the date of th
 ```
 You are the installer. Install the plugin jadlis-skill-builder from the jadlis marketplace on this Mac.
 Run exactly these commands, verbatim, shortening nothing:
-1. claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 2. claude plugin install jadlis-skill-builder@jadlis
 3. claude plugin list — show me the line about jadlis-skill-builder and its version.
 This plugin needs no keys: it runs on the Claude Code subscription, nothing has to be entered.
@@ -79,7 +79,7 @@ If a command returns an error, stop, show me the output, and do not move to the 
 **b) Commands by hand.**
 
 ```
-claude plugin install jadlis-skill-builder --marketplace https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin install jadlis-skill-builder --marketplace https://github.com/beCyborg/jadlis-hub.git
 claude plugin list
 ```
 
@@ -89,7 +89,7 @@ line removes it: `claude plugin uninstall jadlis-skill-builder@jadlis --keep-dat
 Claude Code older than 2.1.292 has no `--marketplace` flag. Then install with two commands:
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 ```
 
@@ -138,7 +138,7 @@ house conventions; upstream itself, by the notes in this repository, has been fr
 
 **Verified where I work:** my Mac, my subscription. Where else this works — [уточнить].
 
-**Source.** The plugin's repository: [github.com/becyb-org/jadlis-skill-builder](https://github.com/becyb-org/jadlis-skill-builder). The install commands above take the catalog from the hub on GitLab.
+**Source.** The plugin's repository: [github.com/beCyborg/jadlis-skill-builder](https://github.com/beCyborg/jadlis-skill-builder). The install commands above take the catalog from the hub on GitHub.
 
 **Terms of use.** A fork of an official Anthropic plugin, licensed Apache-2.0 — the text is in the
 [LICENSE](LICENSE) file.

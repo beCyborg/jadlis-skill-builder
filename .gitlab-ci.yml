@@ -1,8 +1,0 @@
-# CI lives in the hub: gitleaks, claude plugin validate --strict, README parity, privacy grep.
-include:
-  - project: beCyborg/jadlis-hub
-    ref: main
-    file: /ci/plugin-ci.yml
-
-variables:
-  JADLIS_CI_MODE: marketplace   # root keeps a legacy single-plugin marketplace.json

@@ -1,6 +1,6 @@
 # jadlis-skill-builder — конвенции репо
 
-Один плагин `jadlis-skill-builder` в корне (root-as-plugin, скиллы в `skills/`); основной дом репозитория — `https://github.com/becyb-org/jadlis-skill-builder`, соседние репозитории — `https://github.com/becyb-org/<repo>`; раздаётся через хаб `jadlis` (команды установки берут его адрес `https://gitlab.com/beCyborg/jadlis-hub.git`), легаси-`marketplace.json` со `skill-creator-plugin` оставлен ради режима `mode: marketplace` в CI, `renames` пуст — совместимости со старыми именами нет. Упаковка живёт в соседнем плагине `plugin-builder` (команда `/plugin-builder`, репозиторий `https://github.com/becyb-org/jadlis-plugin-builder`; до переименования — `plugin-creator`). Эти правила читает агент, который правит и коммитит репозиторий.
+Один плагин `jadlis-skill-builder` в корне (root-as-plugin, скиллы в `skills/`); основной дом репозитория — `https://github.com/beCyborg/jadlis-skill-builder`, соседние репозитории — `https://github.com/beCyborg/<repo>`; раздаётся через хаб `jadlis` (команды установки берут его адрес `https://github.com/beCyborg/jadlis-hub.git`), легаси-`marketplace.json` со `skill-creator-plugin` оставлен ради режима `mode: marketplace` в CI, `renames` пуст — совместимости со старыми именами нет. Упаковка живёт в соседнем плагине `plugin-builder` (команда `/plugin-builder`, репозиторий `https://github.com/beCyborg/jadlis-plugin-builder`; до переименования — `plugin-creator`). Эти правила читает агент, который правит и коммитит репозиторий.
 
 ## Коммиты
 
@@ -40,7 +40,7 @@ claude plugin validate .claude-plugin/marketplace.json
 ## Приватность
 
 - В файлах нет ключей, почт, телефонов, путей владельца (`/Users/<имя>` → писать `~`) и упоминаний приватного бэкапа.
-- Перед пушем локально: `gitleaks git .` и `privacy-grep.py`. В CI (`.gitlab-ci.yml`, общий шаблон `/ci/plugin-ci.yml` из `gitlab.com/beCyborg/jadlis-hub`) гоняются валидация плагинов, gitleaks, privacy-grep и README-паритет.
+- Перед пушем локально: `gitleaks git .` и `privacy-grep.py`. В CI (`.github/workflows/ci.yml`, reusable workflow `beCyborg/jadlis-hub/.github/workflows/plugin-ci.yml`) гоняются валидация плагинов, gitleaks, privacy-grep и README-паритет.
 
 ## Разработка
 

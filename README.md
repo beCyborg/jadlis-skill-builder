@@ -7,13 +7,13 @@
 начнёт включаться сам.
 
 ```
-claude plugin install jadlis-skill-builder --marketplace https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin install jadlis-skill-builder --marketplace https://github.com/beCyborg/jadlis-hub.git
 ```
 
 Если Claude Code старше 2.1.292, флага `--marketplace` ещё нет. Тогда ставь двумя командами:
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 ```
 
@@ -67,7 +67,7 @@ claude plugin install jadlis-skill-builder@jadlis
 ```
 Ты — установщик. Поставь на этот Mac плагин jadlis-skill-builder из маркетплейса jadlis.
 Выполни ровно эти команды, дословно, ничего не сокращая:
-1. claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 2. claude plugin install jadlis-skill-builder@jadlis
 3. claude plugin list — покажи мне строку про jadlis-skill-builder и его версию.
 Ключи этому плагину не нужны: он работает на подписке Claude Code, ничего вводить не надо.
@@ -79,7 +79,7 @@ claude plugin install jadlis-skill-builder@jadlis
 **б) Команды руками.**
 
 ```
-claude plugin install jadlis-skill-builder --marketplace https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin install jadlis-skill-builder --marketplace https://github.com/beCyborg/jadlis-hub.git
 claude plugin list
 ```
 
@@ -89,7 +89,7 @@ claude plugin list
 Если Claude Code старше 2.1.292, флага `--marketplace` ещё нет. Тогда ставь двумя командами:
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-skill-builder@jadlis
 ```
 
@@ -134,7 +134,7 @@ Benchmark без субагентов недоступен — там остаё
 
 **Проверено там, где я работаю:** мой Mac, моя подписка. Где ещё это работает — [уточнить].
 
-**Исходники.** Репозиторий плагина: [github.com/becyb-org/jadlis-skill-builder](https://github.com/becyb-org/jadlis-skill-builder). Команды установки выше берут каталог из хаба на GitLab.
+**Исходники.** Репозиторий плагина: [github.com/beCyborg/jadlis-skill-builder](https://github.com/beCyborg/jadlis-skill-builder). Команды установки выше берут каталог из хаба на GitHub.
 
 **Условия использования.** Форк официального плагина Anthropic, лицензия Apache-2.0 — текст в файле
 [LICENSE](LICENSE).

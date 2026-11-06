@@ -1,5 +1,19 @@
 # Changelog — jadlis-skill-builder
 
+## [2.4.1] — 2026-11-06 — репозиторий снова на GitHub beCyborg / repository back on GitHub beCyborg
+
+### Для человека
+
+- Плагин снова живёт на GitHub: https://github.com/beCyborg/jadlis-skill-builder. Каталог ставится командой `claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git`.
+- Работа плагина не изменилась, поменялись только адреса.
+
+### For agents
+
+- Changed: README pair, `docs/employee*.md`, `.claude/CLAUDE.md`, `.claude-plugin/plugin.json` and legacy `marketplace.json` owner — GitLab/becyb-org → `github.com/beCyborg`.
+- Changed: `skills/skill-builder/references/plugin-packaging.md` — house marketplace URL is `https://github.com/beCyborg/jadlis-hub.git`.
+- Changed: CI `.gitlab-ci.yml` → `.github/workflows/ci.yml` (reusable `beCyborg/jadlis-hub` plugin-ci).
+- Changed: `.claude-plugin/plugin.json` version 2.4.0 → 2.4.1.
+
 ## [2.4.0] — 2026-11-04 — справочники сверены с Claude Code 2.1.318, основной дом — GitHub becyb-org / references aligned with Claude Code 2.1.318, primary home moved to GitHub becyb-org
 
 ### Для человека
