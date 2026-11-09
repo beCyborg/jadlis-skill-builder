@@ -35,7 +35,7 @@ description: "TODO replace — one line stating what this skill does AND when to
 # arguments: [optional: named positional arguments for $name substitution, e.g. "issue branch" or ["issue", "branch"]]
 # disallowed-tools: [optional, e.g. "AskUserQuestion" — tools removed from the pool while active; clears on the next user message]
 # model: [optional, model override; accepts /model values or "inherit"; turn-scoped]
-# effort: [optional: low/medium/high/xhigh/max (available levels depend on the model)]
+# effort: [optional: low/medium/high/xhigh/max (available levels depend on the model). Unset = the session's level. Long multi-step or unattended runs: test one level up, lower levels end turns early more often. A prompt line can't lower thinking; this field can. On an inline skill it costs a cache rebuild — prefer it on a context: fork skill or an agent (references/model-routing.md sections 2 and 5).]
 # paths: [optional: glob patterns limiting activation, e.g. "*.py, src/**"]
 # shell: [optional: bash (default) or powershell]
 # context: [optional: fork - runs in a forked subagent context; background by default since v2.1.218]
@@ -90,14 +90,15 @@ Delete this entire "Structuring This Skill" section when done - it's just guidan
 
 ## Run contract
 
-[TODO: Fill in "Done when"; drop a line that cannot apply (e.g. no subagents → drop "Subagent results") but don't weaken the others.]
+[TODO: Fill in "Done when" and the actions that need a go-ahead; drop a line that cannot apply (e.g. no subagents → drop "Subagent results") but don't weaken the others.]
 
 - **Done when:** [TODO: one sentence — the artifact or state that ends a run, and the check that proves it].
-- **Keep going vs. stop:** a step inside this skill's scope that needs no input from the user — do it, don't announce it and stop. Never end a turn on a status line, a recap naming the next step, or an offer to continue («Сделать?», «Продолжить?»). Stop only when you cannot continue without the user, or before anything risky (delete, send outward, payments, secrets).
+- **Keep going vs. stop:** a step inside this skill's scope that needs no input from the user — do it, don't announce it and stop. Never end a turn on a status line, a recap naming the next step, or an offer to continue («Сделать?», «Продолжить?»). Stop only when you cannot continue without the user, or before an action named here: [TODO: the exact actions that need a go-ahead, e.g. deleting files outside {{WORK_DIR}}, sending an email or a chat message, posting publicly, paying, printing a secret value]. These need none: reading, re-running a script, retrying a call that is safe to repeat, writing inside {{WORK_DIR}}.
+- **Obstacles:** an error, a timeout, an empty result or a failing tool is not a reason to stop — diagnose it, then retry, fix the call, or use another tool or source. A deliberate blocker (a file marked do-not-touch, access withheld on purpose, a safety guardrail) — leave it alone, say what you found, and finish the rest another safe way.
 - This skill's own confirm steps (listed in its body) override "keep going"; default-accept applies only where the skill already allows it.
 - **Subagent results:** before using a subagent's result, open 1–2 of its cited file:line/URLs or re-run one command; claims you did not check are labelled «не проверено».
 - **Progress file:** a run longer than 10 steps, or one with user answers between steps, keeps a `- [ ]` checklist in `{{WORK_DIR}}/progress.md`, ticked as it goes; after a pause or context compaction, re-read it and continue from the first unticked item.
-- **Final report:** result → «Не удалось подтвердить» (what, and where it was looked for) → **От тебя:** on its own line, only when the user must do or decide something.
+- **Final report:** written for a reader who saw none of the tool calls — result first, in plain words, with no label coined during the run; then «Не удалось подтвердить» (what, and where it was looked for); then **От тебя:** on its own line, only when the user must do or decide something.
 
 ## Resources
 

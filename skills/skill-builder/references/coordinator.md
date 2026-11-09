@@ -12,4 +12,4 @@ The coordinator must:
 8. **Report results clearly** - Display pass/fail with evidence and metrics
 9. **Review user_notes** - Check executor's user_notes.md for issues that passed expectations might miss
 10. **Capture execution metrics** - In Benchmark mode, record tokens/time/tool_calls from each execution
-11. **Use most capable model for analysis** - Benchmark analyzer should use the smartest available model
+11. **Analysis model** - The benchmark analyzer runs on the session's model unless a measured gap justifies pinning a stronger one (`references/model-routing.md`)

@@ -18,9 +18,10 @@ Skills use a three-level loading system:
 These word counts are approximate and you can feel free to go longer if needed.
 
 **Key patterns:**
-- Keep SKILL.md under 500 lines; if you're approaching this limit, add an additional layer of hierarchy along with clear pointers about where the model using the skill should go next to follow up.
+- Keep SKILL.md under 500 lines; if you're approaching this limit, move detail into reference files linked directly from SKILL.md, with clear pointers about when to read each one.
+- Keep references one level deep: a file reached only through another reference may be previewed instead of read in full.
 - Reference files clearly from SKILL.md with guidance on when to read them
-- For large reference files (>300 lines), include a table of contents
+- For reference files longer than 100 lines, include a table of contents
 
 **Domain organization**: When a skill supports multiple domains/frameworks, organize by variant:
 ```
@@ -87,3 +88,33 @@ A few craft points that consistently help:
   strong hints the model can rationalize around; a `PreToolUse` hook (exit code 2
   blocks + feeds back) enforces deterministically. See
   `references/frontmatter-reference.md` §6.
+
+Five more points come from Anthropic's "Prompting Claude Fable 5.2"
+(platform.claude.com, read 2026-11-09). Anthropic measured them on its own tasks —
+confirm each on the skill's evals:
+
+- **Keep reasoning out of the output.** Ask for the result and a short
+  justification, not for the model's reasoning: "think step by step in
+  `<thinking>` tags" or "show your reasoning" can be declined (refusal category
+  `reasoning_extraction`, no automatic fallback). Depth comes from `effort:`, not
+  from prompt lines — "answer directly without deliberating" no longer lowers
+  thinking at `medium` and above (`references/model-routing.md` §5).
+- **Give a rule its scope, its reason and its exception.** The model applies a
+  rule as written: a bare "never", or a category such as "anything external",
+  makes it hold back routine work, and a separate "approved steps may proceed"
+  line barely helps. Name the exact actions that need a go-ahead, put the
+  exception inside the rule ("ask first, then …"), and name the routine steps
+  that need none (retrying a call that is safe to repeat, re-running a script).
+- **Describe the reader instead of capping the style.** A hard limit ("20 words
+  per sentence at most") is followed literally and makes prose choppy. Say who
+  reads the output and what they have not seen; keep a numeric limit only where
+  an eval shows it is needed.
+- **Price delegation where you ask for it.** A standing "use subagents" line is
+  followed readily, and every subagent pays for a context of its own. Say when
+  delegation pays, when to stay inline, and how to brief a worker
+  (`references/orchestration-guide.md`, "Cost first").
+- **Say who owns the code when the skill edits code.** Unstated, the model adds
+  to the existing structure and reports nearby problems instead of fixing them.
+  To have it restructure, say the codebase is its own to shape; for minimal
+  diffs say so and leave that sentence out — a scope rule elsewhere does not
+  cancel it.

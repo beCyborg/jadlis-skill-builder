@@ -19,6 +19,25 @@ Some advice on writing style when improving a skill:
 
 This task is pretty important (we are trying to create billions a year in economic value here!) and your thinking time is not the blocker. I'd suggest writing a draft skill and then looking at it anew and making improvements. Really try to get into the head of the user and understand what they want and need. Best of luck.
 
+### Carrying a skill to a new model
+
+When the session model is newer than the one the skill was tuned on, read its
+SKILL.md, references and agent files before the first eval. Remove or re-test the
+lines written for the old model (Anthropic, "Prompting Claude Fable 5.2", section
+"Review instructions written for earlier models", read 2026-11-09):
+
+- Standing instructions to delegate — keep only those the evals show are needed.
+- Requests to show reasoning in the reply (`<thinking>` tags, "explain your
+  reasoning step by step") — remove; they can be refused.
+- "Answer directly / don't deliberate" — remove; lower `effort:` instead.
+- A token budget written into a prompt ("you have N tokens left") — remove and re-test.
+- Hard style limits (words per sentence) — remove unless an eval needs them.
+- Built-up "never / always" cautions — delete those whose reason is gone; give
+  the rest a scope, a reason and their exception.
+
+Then re-run the no-skill baseline and the effort sweep
+(`references/model-routing.md` §5): a level tuned on the old model does not carry over.
+
 ### Setup Phase
 
 0. **Read output schemas**:
@@ -205,7 +224,9 @@ history.iterations.append({
        --iteration <N+1>
    ```
 
-2. Apply improvements from analyzer suggestions
+2. Apply improvements from analyzer suggestions. The workspace copy is yours to
+   restructure: merge duplicated instructions and delete lines the transcripts show
+   have no effect or make the agent hold back, rather than only appending.
 
 3. Create new tasks for next iteration
 
@@ -224,7 +245,9 @@ When iterations complete:
 3. **Key Improvements**: What changes had the most impact
 4. **Recommendation**: Whether to adopt the improved skill
 
-Copy best skill back to main location:
+This copy overwrites the user's original skill, so ask for a go-ahead first
+("replace `<skill>` with `<best_version>`?"). Once the user agrees, copy the best
+skill back to the main location:
 ```bash
 cp -r workspace/<best_version>/skill/* ./
 ```

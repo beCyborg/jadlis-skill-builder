@@ -1,6 +1,6 @@
 # Environment Notes: Claude.ai and Cowork
 
-> Last audited against Claude Code docs: 2026-11-04 (v2.1.318, mirror 8f02c497)
+> Last audited against Claude Code docs: 2026-11-09 (v2.1.321, mirror 39e6937e)
 
 The core loop (draft → test → review → improve) is the same everywhere; only the mechanics change.
 

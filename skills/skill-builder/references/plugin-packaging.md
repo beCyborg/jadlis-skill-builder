@@ -1,6 +1,6 @@
 # Distributing a Skill as a Plugin
 
-> Last audited against Claude Code docs: 2026-11-04 (v2.1.318, mirror 8f02c497)
+> Last audited against Claude Code docs: 2026-11-09 (v2.1.321, mirror 39e6937e)
 
 `python -m scripts.package_skill` produces a `.skill` file — the quick path for handing one skill to one person. For anything that needs to be **shared with teammates, versioned, updated over time, or published**, wrap the skill in a **plugin** inside a **marketplace**. (This skill ships exactly that way.)
 
@@ -52,10 +52,10 @@ A plugin with a **root-level `SKILL.md`**, no `skills/` subdir **and no `skills`
 ```
 
 - `$schema` is `https://json.schemastore.org/claude-code-plugin-manifest.json` (v2.1.120+). Claude Code **ignores it at load time** — it is for editor autocomplete only, not a CI gate (the published schemas lag the CLI).
-- `themes` and `monitors` must be nested under `"experimental": { ... }` (top-level still works but warns). Plugin monitors don't start under `-p`; on Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform or Microsoft Foundry, or with `DISABLE_TELEMETRY` / `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set, they need v2.1.310+ (`plugins__components.md:587-588`; `changelog.md:591`).
+- `themes` and `monitors` must be nested under `"experimental": { ... }` (top-level still works but warns). Plugin monitors don't start under `-p`; on Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform or Microsoft Foundry, or with `DISABLE_TELEMETRY` / `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set, they need v2.1.310+ (`plugins__components.md:587-588`; `changelog.md:753`).
 - `defaultEnabled: false` (v2.1.154+) ships the plugin disabled; users enable it with `/plugin` or `claude plugin enable`. Dependencies of enabled plugins stay enabled automatically. A `defaultEnabled` in the marketplace entry overrides the manifest value.
 - `userConfig` declares values Claude Code prompts for at enable time, substituted as `${user_config.KEY}` and exported to hooks as `CLAUDE_PLUGIN_OPTION_<KEY>`. Shell-executed fields reject the substitution. Full canon: the `plugin-builder` plugin (`/plugin-builder`, repo `https://github.com/beCyborg/jadlis-plugin-builder`).
-- `dependencies` declares plugin→plugin requirements, optionally with semver ranges resolved against git tags named `{plugin-name}--v{version}` — without those tags a constraint can't resolve.
+- `dependencies` declares plugin→plugin requirements, optionally with semver ranges resolved against git tags named `{plugin-name}--v{version}` — without those tags a constraint can't resolve. A dependency a new version adds is installed by `claude plugin update`, `/plugin` "Update now" and background auto-update only since v2.1.319 (`changelog.md:117,157`); before, an update left it uninstalled.
 - Plugin **agents** support only `name`, `description`, `model`, `effort`, `maxTurns`, `autoCompactWindow`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, `isolation` (`"worktree"` only), `color`, and the `cacheTtl` key of `experimental`. `permissionMode`, `hooks`, `mcpServers`, and `initialPrompt` are **ignored** in plugin-shipped agents — ship hooks and MCP servers as plugin components instead. An agent file whose frontmatter doesn't parse still loads, with every field ignored and a generic description.
 
 ## Path variables
@@ -96,6 +96,7 @@ claude plugin validate <path>     # primary validator
 
 - Pointed at a **marketplace directory**: schema errors, **duplicate plugin names**, **source path traversal**, and — for every entry whose `source` is a local path — that plugin's own `plugin.json`, with a warning when the entry's `version` disagrees with it (findings prefixed `plugins[2] plugin.json →`). It does **not** open the plugins' skill/agent/command/hook files.
 - Pointed at a **plugin directory**: `plugin.json`, `hooks/hooks.json`, and the `skills`, `agents`, and `commands` directories **at the plugin root** only. A root-level `SKILL.md` is **not** checked here — to check it, run again naming the containing directory, which must literally be called `skills`. For paths set through component path fields, only *existence* is checked; the files are not read. Symlinks are **not** followed (linked dirs and entries are skipped with a warning; naming a symlinked dir is an error).
+- Pointed at a **manifest file** not named `plugin.json` or `marketplace.json` and outside `.claude-plugin/`, it guesses the type from the fields (a `plugins` array, or `owner` and no plugin-only field such as `author` → marketplace; otherwise plugin manifest). Name the file to choose the checks (`plugins__cli-reference.md:634-642`).
 - Pointed at a **bare skills/agents/commands directory** (`claude plugin validate .claude/skills`, `~/.claude`, `./my-plugin/agents`) it checks every file there — the way to catch unparseable frontmatter in a plugin that has no manifest yet. Requires v2.1.233+.
 - Add `--strict` in CI to turn **all** warnings into errors before you publish, and `--json` (v2.1.259+) for a machine-readable report. A clean run prints `Validation passed`.
 - Since v2.1.281 it also checks MCP servers (`.mcp.json` entries that would be silently dropped at load, undeclared `${user_config.*}` references, insecure URLs) and warns when a shell-form hook leaves `${CLAUDE_PLUGIN_ROOT}` unquoted (breaks on paths with spaces).

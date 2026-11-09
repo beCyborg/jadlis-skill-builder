@@ -1,6 +1,6 @@
 # Sandboxing Notes for Skill Authors
 
-> Last audited against Claude Code docs: 2026-11-04 (v2.1.318, mirror 8f02c497)
+> Last audited against Claude Code docs: 2026-11-09 (v2.1.321, mirror 39e6937e)
 
 Why this matters: **a skill that runs bash must not assume it has network access
 or an unrestricted filesystem.** The user's sandbox settings decide, not the
@@ -33,26 +33,30 @@ hanging or silently producing empty output.
 - **`sandbox.excludedCommands` matches the whole call** (v2.1.314 corrected the
   setting's description): a Bash or Monitor call leaves the sandbox only when an
   entry covers **every** command in it — `npm ci && docker compose build` stays
-  sandboxed under a lone `docker compose *` entry (`sandboxing.md:326-330`;
-  `changelog.md:365`). A skill step that chains a setup command in front of an
+  sandboxed under a lone `docker compose *` entry (`sandboxing.md:327-331`;
+  `changelog.md:527`). A skill step that chains a setup command in front of an
   excluded tool runs sandboxed; split the call. Since v2.1.309 an excluded command
   asks before writing to the sandbox's write-list paths while the sandbox is enabled
-  but can't run, and the unsandboxed fallback is refused there (`changelog.md:642`).
+  but can't run, and the unsandboxed fallback is refused there (`changelog.md:804`).
 - **Shell startup files (v2.1.309+):** on macOS and Linux a sandboxed Bash command's
   shell startup files now run inside the sandbox too, not outside it before each
-  command (`changelog.md:659`). A skill that relied on a profile reaching outside
+  command (`changelog.md:821`). A skill that relied on a profile reaching outside
   the sandbox loses that.
 - **`sandbox.allowNestedUserNamespaces`** (v2.1.305+, Linux/WSL2, user or managed
   settings only): lets sandboxed commands create user namespaces, which Chromium and
   rootless podman need — and lets them get around the sandbox's file protections
-  (`sandboxing.md:562`; `changelog.md:800`). A skill that drives headless Chromium on
+  (`sandboxing.md:563`; `changelog.md:962`). A skill that drives headless Chromium on
   Linux may need it; say so rather than ask for the sandbox off.
 - **`permissions.blockWritesOutsideWorkingDirectories`** (v2.1.314+): `Write`,
   `Edit` and `NotebookEdit` refuse paths outside the working directories in every
   permission mode, `bypassPermissions` included; shell commands, MCP tools and hook
-  programs are not limited by it (`settings-reference.md:1097-1099`;
-  `changelog.md:293`). A skill that writes its report to `~/` or `/tmp` with the
+  programs are not limited by it (`settings-reference.md:1099-1101`;
+  `changelog.md:455`). A skill that writes its report to `~/` or `/tmp` with the
   file tools fails there — write inside the project, or `/add-dir` the target.
+- **Nested skills under the sandbox (v2.1.319+):** with the Bash sandbox on, a skill in
+  a `.claude/skills` folder below the starting folder loads only if Claude Code starts
+  there or the user `/cd`s there (`changelog.md:49`; docs not yet updated). A monorepo package skill can be absent
+  for a sandboxed user; say where to start the session.
 
 ## Authoring rules
 

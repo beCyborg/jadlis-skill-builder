@@ -26,6 +26,8 @@ Unlike Eval mode (which runs individual evals), Benchmark mode:
 
 **Run on current model by default.** If the user doesn't specify, run on whatever model is currently active. For cross-model comparison, ask which models they'd like to test.
 
+**Re-run the effort sweep when the model changes.** A level tuned on the previous model does not carry over — the same name is a different budget on another model. Run the benchmark once per level (the skill's shipped level and one neighbour each way; pass the level as the executors' Agent-call `effort`, see `references/eval-mode.md`), keep each run's `benchmark.json`, and compare pass rate, tokens and wall time. Keep the lower level unless the higher one fixes failures that matter (`references/model-routing.md` §5).
+
 ## Terminology
 
 | Term | Definition |

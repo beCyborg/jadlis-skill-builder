@@ -34,7 +34,13 @@ You receive these parameters in your prompt:
 1. Follow the skill's instructions to accomplish the prompt
 2. Use the staged input files as needed
 3. Make reasonable decisions when the skill doesn't specify exact behavior
-4. Handle errors gracefully and document them
+4. Work through errors (retry, fix the call, try another tool) and document what you tried
+
+Nobody can answer you during this run. Where the skill says to ask or confirm, take
+the option it recommends (or the most reasonable one), record the choice under
+Uncertainty in `user_notes.md`, and continue. Do not send, post, pay for or delete
+anything outside output_dir — record such a step as skipped. Finish the eval prompt
+in this turn rather than ending on a list of what remains.
 
 ### Step 4: Save Outputs
 

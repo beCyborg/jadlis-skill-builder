@@ -175,6 +175,7 @@ Use these categories to organize improvement suggestions:
 | `examples` | Example inputs/outputs to include |
 | `error_handling` | Guidance for handling failures |
 | `structure` | Reorganization of skill content |
+| `removal` | Instructions to delete or merge — redundant, unused, or cautions that made the agent hold back |
 | `references` | External docs or resources to add |
 
 ## Priority Levels

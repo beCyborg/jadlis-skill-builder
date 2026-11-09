@@ -114,6 +114,8 @@ Create a skill when you keep pasting the same instructions, checklist, or multi-
 3. What's the expected output format?
 4. Should we set up test cases to verify the skill works? Skills with objectively verifiable outputs (file transforms, data extraction, code generation, fixed workflow steps) benefit from test cases. Skills with subjective outputs (writing style, art) often don't need them. Suggest the appropriate default based on the skill type, but let the user decide.
 
+Where the task can be tried right away, run one realistic prompt without any skill before drafting and note where Claude falls short. Those gaps are what the skill has to fix and what its first test cases check — a draft written without them tends to document imagined problems.
+
 ### Interview, Research & House Style
 
 The interview is adaptive: a silent triage gate routes simple skills (advise/format/summarize, one pass) to a single AskUserQuestion screen, and complex ones (fan-out, MCP/API, cron, multi-file mutation, mid-run interaction) to a staged flow — intent, research, architecture, guardrails, evals. Follow `references/creation-interview.md`; it also defines the "just vibe" degradation for users who don't want process.
@@ -140,12 +142,12 @@ This creates:
 Based on interview, fill in the required fields and relevant optional fields:
 
 - **name**: Command name (kebab-case, max 64 chars). In a personal or project skill, `name` sets the command you type **and** the directory name invokes it too (`deploy-staging/` + `name: deploy` → `/deploy` and `/deploy-staging`). In a plugin skill, `name` replaces the command's *last segment* and the plugin prefix stays (v2.1.216+); in a plugin-root `SKILL.md`, `name` supplies the final segment. Keep `name` == directory basename when the skill must travel — the portable path requires it (§1.1 of `references/frontmatter-reference.md`). Every skill is also a slash command (`/<name>`, or `/<plugin>:<name>`) and appears in the `/` menu unless `user-invocable: false`. Check `/skills` for collisions and avoid reserved and built-in command names — the canonical list lives in `references/description-optimization.md` §"Naming the skill" (it also covers names that silently don't load, and why a project/user skill named `verify` runs before every commit).
-- **description**: What the skill does — this is the primary triggering mechanism. Front-load key use cases: the combined `description` + `when_to_use` text is truncated at **1,536 characters** in the skill listing. Include both what the skill does AND specific contexts for when to use it. Claude tends to "undertrigger" skills — make descriptions a little "pushy" (e.g., "Build dashboards for internal data. Use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'")
+- **description**: What the skill does — this is the primary triggering mechanism. Front-load key use cases: the combined `description` + `when_to_use` text is truncated at **1,536 characters** in the skill listing. Include both what the skill does AND specific contexts for when to use it. Claude tends to "undertrigger" skills — make the description complete about when to fire (e.g., "Build dashboards for internal data. Use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"). If evals still show undertriggering, add trigger contexts rather than louder wording: "CRITICAL: you MUST use…" makes recent models overtrigger
 - **when_to_use** *(optional)*: Additional trigger context — phrases, example requests. Appended to `description` in the skill listing and counts toward the 1,536-char cap. Use `description` for WHAT it does and `when_to_use` for WHEN to invoke it.
 
 **Optional fields**: invocation control (`when_to_use`, `arguments`, `argument-hint`, `disable-model-invocation`, `user-invocable`), execution (`allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`/`agent`/`background`, `paths`, `shell`), session hooks (`hooks` — registered on invocation and kept for the rest of the session, not dropped when the skill finishes), portability metadata (`license`, `metadata`, `compatibility`). Full field table, semantics, and version notes: `references/frontmatter-reference.md` §1; quick schema: `references/schemas.md`.
 
-**Portability check**: only six fields — `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools` — survive outside Claude Code (claude.ai uploads, the Skills API, `.skill` packaging, enabling a personal skill for Cowork/cloud sessions). Anything else fails those paths with a hard `Unexpected key(s)` error. If the skill must travel, restrict the frontmatter to those six; `scripts/quick_validate.py` warns and `scripts/package_skill.py` refuses. Details: `references/frontmatter-reference.md` §1.1.
+**Portability check**: only six fields — `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools` — survive outside Claude Code (claude.ai uploads, the Skills API, `.skill` packaging, enabling a personal skill for Cowork/cloud sessions). Anything else fails those paths with a hard `Unexpected key(s)` error. If the skill must travel, restrict the frontmatter to those six and keep `description` within 1,024 characters (the spec's cap; `--portable` fails a longer one); `scripts/quick_validate.py` warns and `scripts/package_skill.py` refuses. Details: `references/frontmatter-reference.md` §1.1.
 
 **Invocation control**: By default, both user and Claude can invoke a skill. Set `disable-model-invocation: true` for user-only skills (e.g., dangerous operations; also blocks preload into subagents and scheduled-task runs). Set `user-invocable: false` for Claude-only background knowledge skills that shouldn't appear in the `/` menu. Matrix and takeaways: `references/frontmatter-reference.md` §2.
 
@@ -255,7 +257,7 @@ Skills can embed shell command output directly into their content at load time. 
 
 ### Reasoning depth (effort, not ultrathink)
 
-`ultrathink` in a user prompt asks for deeper reasoning on that one turn (a Claude Code keyword; "think hard" is plain text): Claude Code always adds an in-context instruction, and since v2.1.311 the word typed at the interactive terminal (VS Code since v2.1.316) can also raise that turn to `xhigh` — only on Opus 5.5, Sonnet 5.5, Haiku 5.5 or Fable 5.1 through Anthropic's API, not on Bedrock and never above `CLAUDE_CODE_EFFORT_LEVEL` or `maxEffortLevel`; the session level stays unchanged. On Opus 5.5 and Fable thinking is always on — for a skill, set depth with `effort:` in frontmatter, not with prompt lines. See `references/frontmatter-reference.md` for details, and `references/model-routing.md` for choosing the level (and why `model:` on an inline skill costs a cache rebuild while `effort:` usually doesn't).
+`ultrathink` in a user prompt asks for deeper reasoning on that one turn (a Claude Code keyword; "think hard" is plain text): Claude Code always adds an in-context instruction, and since v2.1.311 the word typed at the interactive terminal (VS Code since v2.1.316) can also raise that turn to `xhigh` — only on Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.2 or Fable 5.1 through Anthropic's API, not on Bedrock and never above `CLAUDE_CODE_EFFORT_LEVEL` or `maxEffortLevel`; the session level stays unchanged. On Opus 5.5 and Fable thinking is always on — for a skill, set depth with `effort:` in frontmatter, not with prompt lines: a line such as "answer directly without deliberating" no longer lowers thinking at `medium` and above. See `references/frontmatter-reference.md` for details, and `references/model-routing.md` for choosing the level (and why `model:` on an inline skill costs a cache rebuild, and why `effort:` belongs on a `context: fork` skill or an agent rather than on an inline skill).
 
 ### Skills as Subagents
 
@@ -388,6 +390,14 @@ See references/coordinator.md for the full coordinator responsibility list.
 ## Delegating Work
 
 See references/delegating-work.md for delegation patterns with and without subagents.
+
+---
+
+## Run contract
+
+- **Keep going inside the mode you run.** Do the next step without asking, and don't end a turn on an offer to continue. Improve and Benchmark loops run until their own stop condition (`references/improve-mode.md`, `references/benchmark-mode.md`).
+- **Obstacles.** An error, a timeout, an empty result or a failed subagent run is something to work through — retry, fix the call, start the run again — not a reason to stop.
+- **Stop here:** at the review points a mode names (test-case confirmation, viewer feedback), at a question whose answer changes the skill's design, and before copying a version over the user's original skill.
 
 ---
 

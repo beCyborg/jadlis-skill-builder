@@ -16,8 +16,8 @@ Portable mode (--portable, and what package_skill.py's default gate uses) —
     strict, matching claude.ai uploads / the Skills API / `.skill` packaging.
     Only the six Agent Skills spec fields (name, description, license,
     compatibility, metadata, allowed-tools) are legal; anything else is an
-    error, as are a name that breaks the spec, compatibility over 500 chars, a
-    non-string license and a non-map metadata. Checks that only exist for
+    error, as are a name that breaks the spec, a description over 1,024 chars,
+    compatibility over 500 chars, a non-string license and a non-map metadata. Checks that only exist for
     Claude Code-only fields are skipped here — those keys already failed the
     allowlist, and re-reporting them would double up (and, for `context: fork`,
     advise a fix that is itself a portable error).
@@ -59,6 +59,7 @@ PORTABLE_PROPERTIES = {
 # Agent Skills spec caps. Not in skills.md — the spec (agentskills.io) is the
 # source, and they bind on the portable path.
 NAME_MAX = 64
+DESCRIPTION_MAX = 1024
 COMPATIBILITY_MAX = 500
 
 # Only these exact alternate spellings are normalized (key casing, v2.1.186+).
@@ -165,6 +166,14 @@ def validate_frontmatter(frontmatter, dir_name=None, portable=False):
             errors.append(
                 f"Combined description + when_to_use is too long ({len(combined)} characters). "
                 f"Maximum is 1,536 characters (skill-listing truncation cap)."
+            )
+        if portable and len(description) > DESCRIPTION_MAX:
+            # Agent Skills spec / upload-path rule; Claude Code itself only truncates
+            # the listing at 1,536, so this binds on the portable path alone.
+            errors.append(
+                f"description is {len(description)} characters; the portable path "
+                f"(claude.ai uploads, the Skills API, .skill packaging) allows at most "
+                f"1,024 characters."
             )
 
     # name is optional: the skill falls back to the directory name
@@ -446,6 +455,10 @@ def _self_test():
          None, "frobnicate", None, False),
         ("description 1600 -> FAIL", "name: my-skill\ndescription: " + "x" * 1600, "my-skill",
          "1,536", None, None, False),
+        ("description 1100 -> ok in CC mode", "name: my-skill\ndescription: " + "x" * 1100, "my-skill",
+         None, None, None, False),
+        ("description 1100 -> FAIL in portable mode", "name: my-skill\ndescription: " + "x" * 1100, "my-skill",
+         "1,024", None, None, True),
         ("Bad_Name -> FAIL", "description: X.\nname: Bad_Name", "my-skill", "kebab-case", None, None, False),
         ("when_to_use NOT renamed", "description: X.\nname: my-skill\nwhen_to_use: when asked", "my-skill",
          None, None, lambda fm: 'when_to_use' in fm, False),

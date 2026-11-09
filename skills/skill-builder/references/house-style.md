@@ -86,8 +86,8 @@ but write all new ones in the comma-string form.
 ## Run contract
 
 - Every new skill includes the `## Run contract` block (Done when, keep going vs.
-  stop, subagent checks, progress file, final report) — see the `init_skill.py`
-  template.
+  stop with the exact actions that need a go-ahead, obstacles, subagent checks,
+  progress file, final report) — see the `init_skill.py` template.
 
 ## Integration testing
 

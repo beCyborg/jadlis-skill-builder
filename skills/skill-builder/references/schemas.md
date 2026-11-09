@@ -1,6 +1,6 @@
 # JSON Schemas
 
-> Last audited against Claude Code docs: 2026-11-04 (v2.1.318, mirror 8f02c497)
+> Last audited against Claude Code docs: 2026-11-09 (v2.1.321, mirror 39e6937e)
 
 This document defines the JSON schemas used by skill-builder.
 

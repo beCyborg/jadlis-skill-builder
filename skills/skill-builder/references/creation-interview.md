@@ -128,6 +128,12 @@ subagents as fallback). Conditional follow-ups on the same screen when relevant:
    and stays armed for the whole session: `once: true` for a one-shot gate, an
    exact `matcher`/`if` for a narrow one (`references/frontmatter-reference.md` §6).
 4. **Paths** — should the skill only activate for certain file globs (`paths`)?
+5. **Approvals** — which exact actions need the user's go-ahead ("sending an
+   email", "`git push` to main"), not categories such as "anything external"?
+   Write each exception into its rule ("ask first, then …") and list the routine
+   steps that need none (retrying a safe call, re-running a script). These go into
+   the skill's Run contract (`references/skill-writing-craft.md`, "Give a rule its
+   scope").
 
 ### Stage 5 — Evals
 

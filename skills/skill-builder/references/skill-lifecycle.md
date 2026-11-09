@@ -1,6 +1,6 @@
 # Skill Content Lifecycle
 
-> Last audited against Claude Code docs: 2026-11-04 (v2.1.318, mirror 8f02c497)
+> Last audited against Claude Code docs: 2026-11-09 (v2.1.321, mirror 39e6937e)
 
 How skill content behaves across a Claude Code session.
 
@@ -17,7 +17,7 @@ Auto-compaction carries invoked skills forward within a token budget (`skills.md
 - Budget is filled starting from the **most recently invoked** skill (MRU-first)
 - Older skills can be dropped entirely after compaction if many were invoked in one session
 
-The **skill listing** (names and descriptions of every available skill) is a separate matter: since v2.1.304 compaction sends Claude the whole list again afterwards, so a skill not yet invoked stays discoverable after a compaction (`changelog.md:871`; docs not yet updated).
+The **skill listing** (names and descriptions of every available skill) is a separate matter: since v2.1.304 compaction sends Claude the whole list again afterwards, so a skill not yet invoked stays discoverable after a compaction (`changelog.md:1033`; docs not yet updated).
 
 ## Re-invocation
 
@@ -38,8 +38,9 @@ Note that the `allowed-tools` grant does *not* persist with the content: it cove
 Claude Code watches the already-active skill directories — `~/.claude/skills/`, the project `.claude/skills/`, and `.claude/skills/` inside an `--add-dir` directory — except in bare mode. Edits, additions, and removals within those are picked up live (`skills.md:318`). However:
 - Already-loaded skill content in the current conversation is not updated — re-invoke needed (see Re-invocation above)
 - Creating a **top-level** skills directory that did not exist when the session started is the one case the watcher can't pick up — run `/reload-skills` to re-scan without restarting, and again after each later change there, because the watcher never adopts that directory (`skills.md:320`)
-- `/reload-skills` (v2.1.152+) re-scans all skill directories on demand; since v2.1.304 it sends Claude only the new or changed skills, not the whole listing again (`changelog.md:871`; docs not yet updated); a `SessionStart` hook can return `reloadSkills: true` to surface skills it just installed in the same session
+- `/reload-skills` (v2.1.152+) re-scans all skill directories on demand; since v2.1.304 it sends Claude only the new or changed skills, not the whole listing again (`changelog.md:1033`; docs not yet updated); a `SessionStart` hook can return `reloadSkills: true` to surface skills it just installed in the same session
 - Skills and commands changed during a session appear in the `/` slash menu without a restart as of v2.1.216 (before that, the menu showed the stale list until restart)
+- A project skills folder removed and restored mid-session (e.g. by `git stash`) stayed missing before v2.1.321, also after Claude entered a worktree; in SDK and desktop sessions project skills could also drop out of the menu after Claude entered a worktree (changelog 2.1.321).
 
 ## Best practices for long skills
 

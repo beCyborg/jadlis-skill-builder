@@ -114,6 +114,8 @@ Execute this eval:
 - Save outputs to: <workspace>/eval-<id>/<config>/outputs/
 ```
 
+**Model and effort of the executors:** an executor reads SKILL.md as a file, so the skill's `model:`/`effort:` frontmatter does not apply to it — it runs at the session's level unless you pass one. Pass the level the skill ships at as the Agent call's `effort` (v2.1.292+, `references/model-routing.md` §1), the same for `with_skill` and `without_skill`, and name that level in the report. The level changes the result: lower levels end a multi-step run early more often (`references/model-routing.md` §5).
+
 **Capture timing as notifications arrive:** each background executor's completion notification carries `total_tokens` and `duration_ms` — this is the *only* place they're reported. Write them into that run's `timing.json` immediately, notification by notification, rather than batching (format in `references/schemas.md`).
 
 **Without subagents**: Read `agents/executor.md` and follow the procedure directly — execute the eval, save the transcript, and produce outputs inline.
