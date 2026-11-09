@@ -108,13 +108,15 @@ full transcript and returns guidance (`advisor.md:15`).
   `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU,FABLE}_MODEL` can redirect each one to any
   model (`model-config.md:336`). On a machine that redirects `haiku` or `sonnet` to
   an Opus model, an alias-based comparison silently compares a model with itself.
-- Since v2.1.321 `fable` resolves to Fable 5.2 (Fable 5 in Claude apps gateway
-  sessions) and `best` to the same model as `opus` — before, `best` was the model
-  `fable` resolved to (`model-config.md:33,51,1118-1119`). A `claude-fable-5-1`
-  saved in **user** settings moves to `fable` (Pro/Max at the first v2.1.321 run,
-  Team/Enterprise once the organization allows it) and then starts at Fable 5.2's
-  default effort; project, local and managed settings keep `claude-fable-5-1`
-  (`model-config.md:74-79`; changelog 2.1.321).
+- Since v2.1.321 `fable` resolves to Fable 5.2 — the changelog of 2.1.321 says Fable 5.2
+  (`claude-fable-5-2`) is "now the default Fable model". The local docs mirror of
+  2026-11-09 still names Fable 5.1 there (`model-config.md:51`) and still defines `best`
+  as the model `fable` resolves to where Fable is available, else `opus`
+  (`model-config.md:33`). The one documented auto-update of a saved Fable ID is older:
+  from v2.1.257 a `claude-fable-5` / `claude-fable-5[1m]` in **user** settings becomes
+  `fable` / `fable[1m]`, while project, local and managed settings keep the ID
+  (`model-config.md:74`). Neither the 2.1.321 changelog nor the docs say whether a saved
+  `claude-fable-5-1` moves the same way — pin the full ID and check the startup model line.
 - To pin a version, use the full model ID, e.g. `claude-opus-5-5`
   (`model-config.md:59`). Write full IDs in: benchmark/eval configurations
   (`--model` of `run_loop.py`, `claude plugin eval --model`), agent definitions that

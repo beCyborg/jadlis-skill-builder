@@ -1,5 +1,13 @@
 # Changelog — jadlis-skill-builder
 
+## [2.5.1] — 2026-11-09 — поправка про алиасы Fable / Fable alias note corrected
+
+### Для человека
+- Справочник про модели больше не утверждает того, чего нет в документации и changelog 2.1.321: про перенос `claude-fable-5-1` в алиас и про `best` → Opus. Проверено только одно: с 2.1.321 `fable` ведёт на Fable 5.2.
+
+### For agents
+- Changed: `skills/skill-builder/references/model-routing.md` alias paragraph — 2.1.321 changelog quote; the documented auto-update is the v2.1.257 one (`claude-fable-5` → `fable`, `model-config.md:74`); `best` per `model-config.md:33`; no claim about a saved `claude-fable-5-1`.
+
 ## [2.5.0] — 2026-11-09 — скиллы под Fable 5.2 и сверка с Claude Code 2.1.321 / skills for Fable 5.2, references aligned with Claude Code 2.1.321
 
 ### Для человека
