@@ -68,8 +68,9 @@ def normalize_eval(eval_data: dict) -> dict:
     """
     Normalize eval data to a consistent format.
 
-    Handles both the design doc format (prompt, files, assertions)
-    and the gym format (query, files, expected_behavior).
+    Handles the canonical evals.json format (prompt, files, expectations —
+    what init_json.py writes and validate_json.py checks), the legacy design-doc
+    key "assertions", and the gym format (query, files, expected_behavior).
     """
     # Get the prompt (can be "prompt" or "query")
     prompt = eval_data.get("prompt") or eval_data.get("query")
@@ -79,9 +80,13 @@ def normalize_eval(eval_data: dict) -> dict:
     # Get files (default to empty list)
     files = eval_data.get("files", [])
 
-    # Get assertions - can be "assertions" (list of strings)
-    # or "expected_behavior" (list of strings or objects)
-    assertions = eval_data.get("assertions")
+    # Get assertions - canonical "expectations" (list of strings), legacy
+    # "assertions", or gym "expected_behavior" (list of strings or objects).
+    # Missing "expectations" used to fall through to an empty list silently,
+    # so graders received nothing to grade.
+    assertions = eval_data.get("expectations")
+    if assertions is None:
+        assertions = eval_data.get("assertions")
     if assertions is None:
         expected_behavior = eval_data.get("expected_behavior", [])
         # Convert expected_behavior to string assertions if needed
@@ -99,10 +104,19 @@ def normalize_eval(eval_data: dict) -> dict:
                         parts.append(f"{key}={value}")
                 assertions.append(" - ".join(parts))
 
+    if not assertions:
+        print(
+            "  Warning: this eval has no expectations — graders will have nothing to grade "
+            "(expected an 'expectations' list in evals.json)",
+            file=sys.stderr,
+        )
+
     return {
         "prompt": prompt,
         "files": files,
-        "assertions": assertions
+        "assertions": assertions,
+        "eval_number": eval_data.get("id"),
+        "eval_name": eval_data.get("eval_name"),
     }
 
 
@@ -180,7 +194,9 @@ def prepare_eval(skill_path: Path, eval_id: int, output_dir: Path, no_skill: boo
 
     # Build metadata
     metadata = {
-        "eval_id": eval_id,
+        "eval_id": eval_id,  # 0-based index into evals.json (CLI argument)
+        "eval_number": normalized["eval_number"],  # the eval's own "id" field
+        "eval_name": normalized["eval_name"],
         "prompt": normalized["prompt"],
         "assertions": normalized["assertions"],
         "input_files": staged_files,

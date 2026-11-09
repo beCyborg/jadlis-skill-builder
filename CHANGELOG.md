@@ -1,5 +1,19 @@
 # Changelog — jadlis-skill-builder
 
+## [2.4.2] — 2026-11-09 — тесты скилла снова получают критерии / eval runs receive their expectations again
+
+### Для человека
+
+- Исправлена ошибка подготовки тестов. Если критерии записаны так, как их создаёт сам плагин (`expectations`), проверяющие раньше получали пустой список и ставили «0 из 0». Теперь критерии доходят до них.
+- Если у теста нет критериев, скрипт подготовки предупреждает об этом прямо.
+
+### For agents
+
+- Fixed: `skills/skill-builder/scripts/prepare_eval.py` — `normalize_eval` now reads the canonical `expectations` key (what `init_json.py` writes and `validate_json.py` checks); `assertions` and gym `expected_behavior` stay as legacy fallbacks. Before, an `expectations`-only eval produced `"assertions": []` in `eval_metadata.json` silently, so graders had nothing to grade.
+- Added: stderr warning `this eval has no expectations` when the list is empty.
+- Added: `eval_metadata.json` carries `eval_number` (the eval's own `id`) and `eval_name` next to `eval_id` (still the 0-based CLI index), so graders stop mixing up eval 0 and eval 1.
+- Changed: `.claude-plugin/plugin.json` version 2.4.1 → 2.4.2.
+
 ## [2.4.1] — 2026-11-06 — репозиторий снова на GitHub beCyborg / repository back on GitHub beCyborg
 
 ### Для человека
